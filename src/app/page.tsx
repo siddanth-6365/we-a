@@ -1,103 +1,326 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Activity, WeekendTemplate } from '@/types';
+import { useWeekendStore } from '@/store/useWeekendStore';
+import { WeekendSchedule } from '@/components/WeekendSchedule';
+import { ShareExport } from '@/components/ShareExport';
+import { WelcomeScreen } from '@/components/WelcomeScreen';
+import { WeekendOverview } from '@/components/WeekendOverview';
+import { ActivityModal } from '@/components/ActivityModal';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { CalendarDays, Save, Share2 } from 'lucide-react';
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [targetDay, setTargetDay] = useState<'saturday' | 'sunday'>('saturday');
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [showActivityModal, setShowActivityModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const {
+    activities,
+    currentPlan,
+    createNewPlan,
+    addActivityToSchedule,
+    removeActivityFromSchedule,
+    updateScheduledActivity,
+    reorderActivities,
+    savePlan,
+    clearCurrentPlan,
+    getSaturdayActivities,
+    getSundayActivities,
+    getTotalPlanDuration
+  } = useWeekendStore();
+
+  // Set client state to avoid hydration issues
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Initialize and check for existing plans
+  useEffect(() => {
+    if (!isClient) return;
+
+    // Check if we have a saved plan in localStorage
+    const savedData = localStorage.getItem('weekendly-storage');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        if (parsed.state?.currentPlan &&
+          (parsed.state.currentPlan.saturday?.length > 0 || parsed.state.currentPlan.sunday?.length > 0)) {
+          // We have an existing plan with activities, don't show welcome
+          setShowWelcome(false);
+          return;
+        }
+      } catch {
+        // If parsing fails, continue with normal flow
+      }
+    }
+
+    if (!currentPlan) {
+      createNewPlan();
+    }
+  }, [isClient, currentPlan, createNewPlan]);
+
+  const handleAddActivity = (activity: Activity) => {
+    if (!currentPlan) return;
+
+    // Default to 9 AM start time for Saturday, adjust based on existing activities
+    const baseDate = new Date();
+    if (targetDay === 'saturday') {
+      baseDate.setDate(baseDate.getDate() + (6 - baseDate.getDay())); // Next Saturday
+    } else {
+      baseDate.setDate(baseDate.getDate() + (7 - baseDate.getDay())); // Next Sunday
+    }
+
+    const dayActivities = targetDay === 'saturday' ? getSaturdayActivities() : getSundayActivities();
+
+    let startTime: Date;
+    if (dayActivities.length === 0) {
+      // First activity of the day - start at 9 AM
+      startTime = new Date(baseDate);
+      startTime.setHours(9, 0, 0, 0);
+    } else {
+      // Add after the last activity
+      const sortedActivities = [...dayActivities].sort(
+        (a, b) => a.startTime.getTime() - b.startTime.getTime()
+      );
+      const lastActivity = sortedActivities[sortedActivities.length - 1];
+
+      if (lastActivity) {
+        const lastActivityData = activities.find(a => a.id === lastActivity.activityId);
+        const duration = lastActivity.customDuration || lastActivityData?.duration || 60;
+        startTime = new Date(lastActivity.startTime.getTime() + duration * 60000);
+      } else {
+        startTime = new Date(baseDate);
+        startTime.setHours(9, 0, 0, 0);
+      }
+    }
+
+    addActivityToSchedule(activity, targetDay, startTime);
+
+    // Hide welcome screen when activities are added
+    setShowWelcome(false);
+  };
+
+  const handleActivityBrowserOpen = (day: 'saturday' | 'sunday') => {
+    setTargetDay(day);
+    setShowActivityModal(true);
+  };
+
+  const handleTemplateApply = (template: WeekendTemplate) => {
+    // Auto-add suggested activities from template
+    const suggestedActivities = activities.filter(activity =>
+      template.suggestedActivities.includes(activity.id)
+    );
+
+    // Add 2-3 activities to each day
+    const saturdayActivities = suggestedActivities.slice(0, 3);
+    const sundayActivities = suggestedActivities.slice(3, 6);
+
+    // Clear current plan and add template activities
+    // For demo purposes, we'll just add to existing plan
+    saturdayActivities.forEach((activity, index) => {
+      const startTime = new Date();
+      startTime.setDate(startTime.getDate() + (6 - startTime.getDay())); // Next Saturday
+      startTime.setHours(9 + index * 2, 0, 0, 0); // Spread activities throughout the day
+      addActivityToSchedule(activity, 'saturday', startTime);
+    });
+
+    sundayActivities.forEach((activity, index) => {
+      const startTime = new Date();
+      startTime.setDate(startTime.getDate() + (7 - startTime.getDay())); // Next Sunday
+      startTime.setHours(10 + index * 2, 0, 0, 0); // Spread activities throughout the day
+      addActivityToSchedule(activity, 'sunday', startTime);
+    });
+
+    // Hide welcome screen after template is applied
+    setShowWelcome(false);
+  };
+
+  const handleGetStarted = () => {
+    clearCurrentPlan();
+    createNewPlan();
+    setShowWelcome(false);
+  };
+
+  const handleContinueExisting = () => {
+    setShowWelcome(false);
+  };
+
+  const handleClearSchedule = () => {
+    if (confirm('Are you sure you want to clear your entire weekend schedule? This action cannot be undone.')) {
+      clearCurrentPlan();
+      createNewPlan();
+    }
+  };
+
+  const handleClearDay = (day: 'saturday' | 'sunday') => {
+    if (confirm(`Are you sure you want to clear all ${day} activities? This action cannot be undone.`)) {
+      const dayActivities = day === 'saturday' ? getSaturdayActivities() : getSundayActivities();
+      dayActivities.forEach(activity => {
+        removeActivityFromSchedule(activity.id);
+      });
+    }
+  };
+
+  const handleSavePlan = () => {
+    savePlan();
+    alert('✅ Weekend plan saved locally! Your plan will be restored when you return.');
+  };
+
+  const scheduledActivityIds = [
+    ...getSaturdayActivities(),
+    ...getSundayActivities()
+  ].map(scheduled => scheduled.activityId);
+
+
+  const totalDuration = getTotalPlanDuration();
+  const hasExistingPlan = currentPlan && (currentPlan.saturday.length + currentPlan.sunday.length) > 0;
+
+  // Also check localStorage for existing plans (client-side only)
+  const hasStoredPlan = isClient && (() => {
+    try {
+      const savedData = localStorage.getItem('weekendly-storage');
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        return parsed.state?.currentPlan &&
+          (parsed.state.currentPlan.saturday?.length > 0 || parsed.state.currentPlan.sunday?.length > 0);
+      }
+    } catch {
+      // Ignore parsing errors
+    }
+    return false;
+  })();
+
+  // Show welcome screen for new users
+  if (showWelcome) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <WelcomeScreen
+          onGetStarted={handleGetStarted}
+          onTemplateSelect={handleTemplateApply}
+          hasExistingPlan={hasExistingPlan || hasStoredPlan}
+          onContinueExisting={handleContinueExisting}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <div className="text-2xl">🗓️</div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Weekendly</h1>
+                <p className="text-sm text-gray-700">Plan your perfect weekend</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {currentPlan && (
+                <div className="hidden sm:flex items-center gap-3 text-sm text-gray-700">
+                  <div className="flex items-center gap-1">
+                    <CalendarDays className="w-4 h-4" />
+                    <span>{currentPlan.name}</span>
+                  </div>
+                  {totalDuration > 0 && (
+                    <Badge variant="secondary">
+                      {Math.floor(totalDuration / 60)}h {totalDuration % 60}m planned
+                    </Badge>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                {/* <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowActivityModal(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Browse Activities
+                </Button> */}
+
+                {totalDuration > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowShareModal(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Share
+                  </Button>
+                )}
+
+                <Button size="sm" onClick={handleSavePlan} className="flex items-center gap-2">
+                  <Save className="w-4 h-4" />
+                  Save Plan
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
+      </header>
+
+      <main className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
+          {/* Weekend Overview - Moved to top */}
+          <WeekendOverview
+            totalDuration={totalDuration}
+            saturdayCount={getSaturdayActivities().length}
+            sundayCount={getSundayActivities().length}
+            onClearSchedule={handleClearSchedule}
+          />
+
+          {/* Weekend Schedule */}
+          <WeekendSchedule
+            saturdayActivities={getSaturdayActivities()}
+            sundayActivities={getSundayActivities()}
+            activities={activities}
+            onRemoveActivity={removeActivityFromSchedule}
+            onUpdateActivity={updateScheduledActivity}
+            onReorderActivities={reorderActivities}
+            onAddActivity={handleActivityBrowserOpen}
+            onClearDay={handleClearDay}
+          />
+        </div>
+
+        {/* Activity Modal */}
+        <ActivityModal
+          isOpen={showActivityModal}
+          onClose={() => setShowActivityModal(false)}
+          activities={activities}
+          scheduledActivityIds={scheduledActivityIds}
+          onAddActivity={handleAddActivity}
+          targetDay={targetDay}
+        />
+
+        {/* Share Modal */}
+        {showShareModal && currentPlan && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => setShowShareModal(false)}
+            />
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+              <ShareExport
+                plan={currentPlan}
+                activities={activities}
+                onClose={() => setShowShareModal(false)}
+              />
+            </div>
+          </div>
+        )}
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
