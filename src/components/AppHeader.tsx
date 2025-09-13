@@ -48,11 +48,11 @@ export function AppHeader({
                     <CalendarDays className="w-4 h-4" />
                     <span className="truncate max-w-[200px]">{currentPlan.name}</span>
                   </div>
-                  {/* {totalDuration > 0 && (
+                  {totalDuration > 0 && (
                     <Badge variant="secondary">
                       {Math.floor(totalDuration / 60)}h {totalDuration % 60}m planned
                     </Badge>
-                  )} */}
+                  )}
                 </div>
               </>
             )}

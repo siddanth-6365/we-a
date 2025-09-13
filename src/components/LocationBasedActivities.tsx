@@ -95,6 +95,25 @@ export function LocationBasedActivities({ onAddActivity, scheduledActivityIds }:
   };
 
   const convertToActivity = (locationActivity: LocationBasedActivity, duration?: number): Activity => {
+    // Assign colors based on category for location-based activities
+    const getCategoryColor = (category: string): string => {
+      const colorMap: Record<string, string> = {
+        'Food & Dining': '#EF4444', // Red
+        'Culture': '#8B5CF6', // Purple
+        'Fitness': '#10B981', // Green
+        'Shopping': '#F59E0B', // Amber
+        'Adventure': '#06B6D4', // Cyan
+        'Outdoor': '#059669', // Emerald
+        'Entertainment': '#EC4899', // Pink
+        'Wellness': '#84CC16', // Lime
+        'Social': '#3B82F6', // Blue
+        'Creative': '#F97316', // Orange
+        'Learning': '#6366F1', // Indigo
+        'Home': '#6B7280' // Gray
+      };
+      return colorMap[category] || '#3B82F6'; // Default blue
+    };
+
     return {
       id: locationActivity.id,
       name: locationActivity.name,
@@ -103,6 +122,7 @@ export function LocationBasedActivities({ onAddActivity, scheduledActivityIds }:
       duration: duration || locationActivity.duration,
       mood: locationActivity.mood as Activity['mood'],
       icon: locationActivity.icon,
+      color: getCategoryColor(locationActivity.category),
       isLocationBased: true,
       locationData: locationActivity.location
     };

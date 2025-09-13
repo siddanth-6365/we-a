@@ -24,7 +24,7 @@ export function WeekendOverview({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="text-3xl">📊</div>
-            <div>
+            <div className="flex flex-row items-center gap-2">
               <h2 className="text-xl font-bold text-gray-900 mb-1">
                 Weekend Overview
               </h2>

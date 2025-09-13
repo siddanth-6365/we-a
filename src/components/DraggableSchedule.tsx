@@ -91,14 +91,14 @@ function DraggableScheduleItem({
       <Card className={`relative hover:shadow-md transition-all ${isDragging ? 'shadow-lg' : ''}`}>
         <div 
           className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
-          style={{ backgroundColor: activity.color }}
+          style={{ backgroundColor: activity.color || '#3B82F6' }}
         />
         
-        <CardContent className="p-4 pl-6">
-          <div className="flex items-start gap-3">
+        <CardContent className="p-3 sm:p-4 pl-5 sm:pl-6">
+          <div className="flex items-start gap-2 sm:gap-3">
             {/* Drag Handle */}
             <button
-              className="opacity-0 group-hover:opacity-100 transition-opacity mt-1 cursor-grab active:cursor-grabbing"
+              className="opacity-0 group-hover:opacity-100 transition-opacity mt-1 cursor-grab active:cursor-grabbing flex-shrink-0"
               {...attributes}
               {...listeners}
               aria-label="Drag to reorder"
@@ -106,19 +106,19 @@ function DraggableScheduleItem({
               <GripVertical className="w-4 h-4 text-gray-400" />
             </button>
 
-            <span className="text-2xl mt-1" role="img" aria-label={activity.name}>
+            <span className="text-xl sm:text-2xl mt-1 flex-shrink-0" role="img" aria-label={activity.name}>
               {activity.icon}
             </span>
             
             <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-gray-900 truncate">
+              <h4 className="font-semibold text-gray-900 truncate text-sm sm:text-base">
                 {activity.name}
               </h4>
               
-              <div className="flex items-center gap-4 mt-1 text-sm text-gray-700">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1 text-xs sm:text-sm text-gray-700">
                 <div className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  <span>
+                  <Clock className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate">
                     {formatTime(scheduledActivity.startTime)} - {formatTime(endTime)}
                   </span>
                 </div>
@@ -128,7 +128,7 @@ function DraggableScheduleItem({
               </div>
 
               {activity.mood.length > 0 && (
-                <div className="flex gap-1 mt-2">
+                <div className="flex flex-wrap gap-1 mt-2">
                   {activity.mood.slice(0, 2).map(mood => (
                     <Badge key={mood} variant="secondary" className="text-xs">
                       {mood}
@@ -146,7 +146,7 @@ function DraggableScheduleItem({
               {isEditing ? (
                 <div className="mt-3 space-y-3">
                   {/* Time inputs */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Start Time
@@ -219,11 +219,11 @@ function DraggableScheduleItem({
                     />
                   </div>
                   
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={handleSave}>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button size="sm" onClick={handleSave} className="flex-1">
                       Save
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>
+                    <Button size="sm" variant="outline" onClick={() => setIsEditing(false)} className="flex-1">
                       Cancel
                     </Button>
                   </div>
@@ -240,7 +240,7 @@ function DraggableScheduleItem({
             </div>
 
             {/* Action buttons */}
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
               <Button
                 size="sm"
                 variant="ghost"

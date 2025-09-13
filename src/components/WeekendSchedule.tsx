@@ -164,7 +164,7 @@ export function WeekendSchedule({
   return (
     <div className="space-y-2">
       {/* Time Settings */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
         <DayTimeSettings
           day="saturday"
           timeBounds={timeBounds.saturday}
@@ -178,7 +178,7 @@ export function WeekendSchedule({
       </div>
 
       {/* Schedule Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[600px]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-[600px]">
         <DaySchedule
           day="saturday"
           activities={saturdayActivities}

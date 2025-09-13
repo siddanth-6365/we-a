@@ -67,13 +67,13 @@ export default function Home() {
       onShare={handleShare}
     >
       {/* Weekend Overview */}
-      <WeekendOverview
+      {/* <WeekendOverview
         key={`overview-${totalDuration}-${saturdayActivities.length}-${sundayActivities.length}`}
         totalDuration={totalDuration}
         saturdayCount={saturdayActivities.length}
         sundayCount={sundayActivities.length}
         onClearSchedule={handleClearSchedule}
-      />
+      /> */}
 
       {/* Weekend Schedule */}
       <WeekendSchedule
