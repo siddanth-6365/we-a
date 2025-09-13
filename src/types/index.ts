@@ -63,6 +63,7 @@ export interface ScheduledActivity {
   customDuration?: number;
   notes?: string;
   mood?: Mood;
+  activityData?: Activity; // Store full activity data for location-based activities
 }
 
 export interface WeekendPlan {

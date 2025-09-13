@@ -18,6 +18,9 @@ export function LocationBasedActivities({ onAddActivity, scheduledActivityIds }:
   const [error, setError] = useState<string | null>(null);
   const [searchRadius, setSearchRadius] = useState(5000); // 5km default
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showDurationModal, setShowDurationModal] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<LocationBasedActivity | null>(null);
+  const [customDuration, setCustomDuration] = useState(120); // Default 2 hours
 
   const categories = [
     { key: 'restaurant', label: 'Restaurants', icon: '🍽️' },
@@ -91,18 +94,32 @@ export function LocationBasedActivities({ onAddActivity, scheduledActivityIds }:
     );
   };
 
-  const convertToActivity = (locationActivity: LocationBasedActivity): Activity => {
+  const convertToActivity = (locationActivity: LocationBasedActivity, duration?: number): Activity => {
     return {
       id: locationActivity.id,
       name: locationActivity.name,
       description: locationActivity.description,
       category: locationActivity.category as Activity['category'],
-      duration: locationActivity.duration,
+      duration: duration || locationActivity.duration,
       mood: locationActivity.mood as Activity['mood'],
       icon: locationActivity.icon,
       isLocationBased: true,
       locationData: locationActivity.location
     };
+  };
+
+  const handleAddClick = (activity: LocationBasedActivity) => {
+    setSelectedActivity(activity);
+    setCustomDuration(activity.duration);
+    setShowDurationModal(true);
+  };
+
+  const handleConfirmAdd = () => {
+    if (selectedActivity) {
+      onAddActivity(convertToActivity(selectedActivity, customDuration));
+      setShowDurationModal(false);
+      setSelectedActivity(null);
+    }
   };
 
   const getPriceDisplay = (priceLevel?: number) => {

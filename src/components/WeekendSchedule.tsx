@@ -147,7 +147,6 @@ export function WeekendSchedule({
   onAddActivity,
   onClearDay
 }: WeekendScheduleProps) {
-
   return (
     <div className="space-y-6">
       {/* Schedule Grid */}

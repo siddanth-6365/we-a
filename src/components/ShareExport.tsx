@@ -26,7 +26,14 @@ export function ShareExport({ plan, activities, onClose }: ShareExportProps) {
     if (saturdayActivities.length > 0) {
       text += '🌅 SATURDAY\n';
       saturdayActivities.forEach(scheduled => {
-        const activity = activities.find(a => a.id === scheduled.activityId);
+        // First try to get activity data from the scheduled activity itself (for location-based activities)
+        let activity = scheduled.activityData;
+        
+        // If not available, try to find it in the main activities array
+        if (!activity) {
+          activity = activities.find(a => a.id === scheduled.activityId);
+        }
+        
         if (activity) {
           const duration = scheduled.customDuration || activity.duration;
           const endTime = new Date(scheduled.startTime.getTime() + duration * 60000);
@@ -43,7 +50,14 @@ export function ShareExport({ plan, activities, onClose }: ShareExportProps) {
     if (sundayActivities.length > 0) {
       text += '🌇 SUNDAY\n';
       sundayActivities.forEach(scheduled => {
-        const activity = activities.find(a => a.id === scheduled.activityId);
+        // First try to get activity data from the scheduled activity itself (for location-based activities)
+        let activity = scheduled.activityData;
+        
+        // If not available, try to find it in the main activities array
+        if (!activity) {
+          activity = activities.find(a => a.id === scheduled.activityId);
+        }
+        
         if (activity) {
           const duration = scheduled.customDuration || activity.duration;
           const endTime = new Date(scheduled.startTime.getTime() + duration * 60000);
@@ -61,7 +75,14 @@ export function ShareExport({ plan, activities, onClose }: ShareExportProps) {
   };
 
   const generateICalEvent = (scheduledActivity: ScheduledActivity) => {
-    const activity = activities.find(a => a.id === scheduledActivity.activityId);
+    // First try to get activity data from the scheduled activity itself (for location-based activities)
+    let activity = scheduledActivity.activityData;
+    
+    // If not available, try to find it in the main activities array
+    if (!activity) {
+      activity = activities.find(a => a.id === scheduledActivity.activityId);
+    }
+    
     if (!activity) return '';
 
     const duration = scheduledActivity.customDuration || activity.duration;
@@ -162,7 +183,14 @@ X-WR-CALDESC:Weekend plan created with Weekendly
             <div class="day">
               <div class="day-title">🌅 Saturday</div>
               ${saturdayActivities.map(scheduled => {
-                const activity = activities.find(a => a.id === scheduled.activityId);
+                // First try to get activity data from the scheduled activity itself (for location-based activities)
+                let activity = scheduled.activityData;
+                
+                // If not available, try to find it in the main activities array
+                if (!activity) {
+                  activity = activities.find(a => a.id === scheduled.activityId);
+                }
+                
                 if (!activity) return '';
                 const duration = scheduled.customDuration || activity.duration;
                 const endTime = new Date(scheduled.startTime.getTime() + duration * 60000);
@@ -182,7 +210,14 @@ X-WR-CALDESC:Weekend plan created with Weekendly
             <div class="day">
               <div class="day-title">🌇 Sunday</div>
               ${sundayActivities.map(scheduled => {
-                const activity = activities.find(a => a.id === scheduled.activityId);
+                // First try to get activity data from the scheduled activity itself (for location-based activities)
+                let activity = scheduled.activityData;
+                
+                // If not available, try to find it in the main activities array
+                if (!activity) {
+                  activity = activities.find(a => a.id === scheduled.activityId);
+                }
+                
                 if (!activity) return '';
                 const duration = scheduled.customDuration || activity.duration;
                 const endTime = new Date(scheduled.startTime.getTime() + duration * 60000);
@@ -216,7 +251,14 @@ X-WR-CALDESC:Weekend plan created with Weekendly
 
   const totalActivities = plan.saturday.length + plan.sunday.length;
   const totalDuration = [...plan.saturday, ...plan.sunday].reduce((total, scheduled) => {
-    const activity = activities.find(a => a.id === scheduled.activityId);
+    // First try to get activity data from the scheduled activity itself (for location-based activities)
+    let activity = scheduled.activityData;
+    
+    // If not available, try to find it in the main activities array
+    if (!activity) {
+      activity = activities.find(a => a.id === scheduled.activityId);
+    }
+    
     return total + (scheduled.customDuration || activity?.duration || 0);
   }, 0);
 

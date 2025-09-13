@@ -70,7 +70,9 @@ export const useWeekendStore = create<WeekendStore>()(
           activityId: activity.id,
           startTime,
           endTime,
-          day
+          day,
+          // Store the full activity data for location-based activities
+          activityData: activity.isLocationBased ? activity : undefined
         };
 
         const updatedPlan = {

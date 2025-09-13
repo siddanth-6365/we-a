@@ -265,8 +265,30 @@ export function DraggableSchedule({
       <SortableContext items={sortedActivities.map(a => a.id)} strategy={verticalListSortingStrategy}>
         <div className="space-y-3">
           {sortedActivities.map((scheduledActivity) => {
-            const activityData = allActivities.find(a => a.id === scheduledActivity.activityId);
-            if (!activityData) return null;
+            // First try to get activity data from the scheduled activity itself (for location-based activities)
+            let activityData = scheduledActivity.activityData;
+            
+            // If not available, try to find it in the main activities array
+            if (!activityData) {
+              activityData = allActivities.find(a => a.id === scheduledActivity.activityId);
+            }
+            
+            // If still not found, create a fallback activity object
+            if (!activityData) {
+              console.log('Activity not found, creating fallback for:', scheduledActivity.activityId);
+              activityData = {
+                id: scheduledActivity.activityId,
+                name: scheduledActivity.activityId.startsWith('loc-') ? 'Location Activity' : 'Unknown Activity',
+                description: 'Location-based activity',
+                category: 'outdoor' as Activity['category'],
+                duration: 60,
+                icon: '📍',
+                mood: ['happy'] as Activity['mood'],
+                isFlexible: true,
+                tags: ['location-based'],
+                color: '#3B82F6'
+              };
+            }
 
             return (
               <DraggableScheduleItem
