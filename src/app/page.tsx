@@ -25,6 +25,7 @@ export default function Home() {
     totalDuration,
     hasExistingPlan,
     hasStoredPlan,
+    timeBounds,
     
     // Actions
     handleAddActivity,
@@ -43,6 +44,7 @@ export default function Home() {
     removeActivityFromSchedule,
     updateScheduledActivity,
     reorderActivities,
+    updateTimeBounds,
   } = useWeekendPlan();
 
   // Show welcome screen for new users
@@ -77,11 +79,13 @@ export default function Home() {
         saturdayActivities={saturdayActivities}
         sundayActivities={sundayActivities}
         activities={activities}
+        timeBounds={timeBounds}
         onRemoveActivity={removeActivityFromSchedule}
         onUpdateActivity={updateScheduledActivity}
         onReorderActivities={reorderActivities}
         onAddActivity={handleActivityBrowserOpen}
         onClearDay={handleClearDay}
+        onUpdateTimeBounds={updateTimeBounds}
       />
 
       {/* Activity Modal */}

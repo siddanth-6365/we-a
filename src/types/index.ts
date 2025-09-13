@@ -66,12 +66,21 @@ export interface ScheduledActivity {
   activityData?: Activity; // Store full activity data for location-based activities
 }
 
+export interface DayTimeBounds {
+  startHour: number; // 0-23
+  endHour: number;   // 0-23
+}
+
 export interface WeekendPlan {
   id: string;
   name: string;
   theme?: WeekendTheme;
   saturday: ScheduledActivity[];
   sunday: ScheduledActivity[];
+  timeBounds: {
+    saturday: DayTimeBounds;
+    sunday: DayTimeBounds;
+  };
   createdAt: Date;
   updatedAt: Date;
 }

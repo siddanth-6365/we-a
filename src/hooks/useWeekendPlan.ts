@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Activity, WeekendTemplate } from '@/types';
 import { useWeekendStore } from '@/store/useWeekendStore';
+import { findNextAvailableSlot, checkDayCapacity } from '@/lib/utils';
 
 export function useWeekendPlan() {
   const [targetDay, setTargetDay] = useState<'saturday' | 'sunday'>('saturday');
@@ -23,7 +24,8 @@ export function useWeekendPlan() {
     clearCurrentPlan,
     getSaturdayActivities,
     getSundayActivities,
-    getTotalPlanDuration
+    getTotalPlanDuration,
+    updateTimeBounds
   } = useWeekendStore();
 
   // Set client state to avoid hydration issues
@@ -62,43 +64,35 @@ export function useWeekendPlan() {
       return;
     }
 
-    // Default to 9 AM start time for Saturday, adjust based on existing activities
-    const baseDate = new Date();
-    if (targetDay === 'saturday') {
-      baseDate.setDate(baseDate.getDate() + (6 - baseDate.getDay())); // Next Saturday
-    } else {
-      baseDate.setDate(baseDate.getDate() + (7 - baseDate.getDay())); // Next Sunday
-    }
-
     const dayActivities = targetDay === 'saturday' ? getSaturdayActivities() : getSundayActivities();
-
-    let startTime: Date;
-    if (dayActivities.length === 0) {
-      // First activity of the day - start at 9 AM
-      startTime = new Date(baseDate);
-      startTime.setHours(9, 0, 0, 0);
-    } else {
-      // Add after the last activity
-      const sortedActivities = [...dayActivities].sort(
-        (a, b) => a.startTime.getTime() - b.startTime.getTime()
-      );
-      const lastActivity = sortedActivities[sortedActivities.length - 1];
-
-      if (lastActivity) {
-        const lastActivityData = activities.find(a => a.id === lastActivity.activityId);
-        const duration = lastActivity.customDuration || lastActivityData?.duration || 60;
-        startTime = new Date(lastActivity.startTime.getTime() + duration * 60000);
-      } else {
-        startTime = new Date(baseDate);
-        startTime.setHours(9, 0, 0, 0);
-      }
+    const timeBounds = currentPlan.timeBounds[targetDay];
+    
+    // Check if we can fit this activity in the day
+    const capacity = checkDayCapacity(dayActivities, targetDay, timeBounds);
+    const activityDuration = activity.duration;
+    
+    if (!capacity.canFit || capacity.availableTime < activityDuration) {
+      const availableHours = Math.floor(capacity.availableTime / 60);
+      const availableMinutes = capacity.availableTime % 60;
+      const timeStr = availableHours > 0 ? `${availableHours}h ${availableMinutes}m` : `${availableMinutes}m`;
+      
+      alert(`Not enough time in ${targetDay}! Available time: ${timeStr}, Activity needs: ${Math.floor(activityDuration / 60)}h ${activityDuration % 60}m`);
+      return;
     }
 
-    addActivityToSchedule(activity, targetDay, startTime);
+    // Find the next available slot
+    const nextSlot = findNextAvailableSlot(dayActivities, activityDuration, targetDay, timeBounds);
+    
+    if (!nextSlot) {
+      alert(`No available time slot for this activity in ${targetDay}!`);
+      return;
+    }
+
+    addActivityToSchedule(activity, targetDay, nextSlot);
 
     // Hide welcome screen when activities are added
     setShowWelcome(false);
-  }, [currentPlan, targetDay, activities, addActivityToSchedule, getSaturdayActivities, getSundayActivities, createNewPlan]);
+  }, [currentPlan, targetDay, addActivityToSchedule, getSaturdayActivities, getSundayActivities, createNewPlan]);
 
   const handleActivityBrowserOpen = useCallback((day: 'saturday' | 'sunday') => {
     setTargetDay(day);
@@ -230,6 +224,10 @@ export function useWeekendPlan() {
     totalDuration,
     hasExistingPlan,
     hasStoredPlan,
+    timeBounds: currentPlan?.timeBounds || {
+      saturday: { startHour: 8, endHour: 21 },
+      sunday: { startHour: 8, endHour: 21 }
+    },
     
     // Actions
     handleAddActivity,
@@ -248,5 +246,6 @@ export function useWeekendPlan() {
     removeActivityFromSchedule,
     updateScheduledActivity,
     reorderActivities,
+    updateTimeBounds,
   };
 }

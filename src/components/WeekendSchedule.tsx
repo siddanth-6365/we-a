@@ -1,8 +1,9 @@
-import { ScheduledActivity, Activity } from '@/types';
+import { ScheduledActivity, Activity, DayTimeBounds } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
 import { DraggableSchedule } from './DraggableSchedule';
+import { DayTimeSettings } from './DayTimeSettings';
 import { formatDuration } from '@/lib/utils';
 import { Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,11 +12,16 @@ interface WeekendScheduleProps {
   saturdayActivities: ScheduledActivity[];
   sundayActivities: ScheduledActivity[];
   activities: Activity[];
+  timeBounds: {
+    saturday: DayTimeBounds;
+    sunday: DayTimeBounds;
+  };
   onRemoveActivity: (scheduledActivityId: string) => void;
   onUpdateActivity: (scheduledActivityId: string, updates: Partial<ScheduledActivity>) => void;
   onReorderActivities: (day: 'saturday' | 'sunday', newOrder: ScheduledActivity[]) => void;
   onAddActivity: (day: 'saturday' | 'sunday') => void;
   onClearDay: (day: 'saturday' | 'sunday') => void;
+  onUpdateTimeBounds: (day: 'saturday' | 'sunday', timeBounds: DayTimeBounds) => void;
 }
 
 
@@ -141,14 +147,30 @@ export function WeekendSchedule({
   saturdayActivities,
   sundayActivities,
   activities,
+  timeBounds,
   onRemoveActivity,
   onUpdateActivity,
   onReorderActivities,
   onAddActivity,
-  onClearDay
+  onClearDay,
+  onUpdateTimeBounds
 }: WeekendScheduleProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
+      {/* Time Settings */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <DayTimeSettings
+          day="saturday"
+          timeBounds={timeBounds.saturday}
+          onUpdate={(bounds) => onUpdateTimeBounds('saturday', bounds)}
+        />
+        <DayTimeSettings
+          day="sunday"
+          timeBounds={timeBounds.sunday}
+          onUpdate={(bounds) => onUpdateTimeBounds('sunday', bounds)}
+        />
+      </div>
+
       {/* Schedule Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[600px]">
         <DaySchedule

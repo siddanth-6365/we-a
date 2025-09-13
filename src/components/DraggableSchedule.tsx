@@ -22,12 +22,13 @@ import { ScheduledActivity, Activity } from '@/types';
 import { Card, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
-import { formatTime, formatDuration } from '@/lib/utils';
+import { formatTime, formatDuration, checkTimeConflicts, getTimeConflictMessage } from '@/lib/utils';
 import { Clock, Trash2, Edit3, GripVertical } from 'lucide-react';
 
 interface DraggableScheduleItemProps {
   scheduledActivity: ScheduledActivity;
   activity: Activity;
+  dayActivities: ScheduledActivity[];
   onRemove: () => void;
   onUpdate: (updates: Partial<ScheduledActivity>) => void;
   isDragging?: boolean;
@@ -36,6 +37,7 @@ interface DraggableScheduleItemProps {
 function DraggableScheduleItem({ 
   scheduledActivity, 
   activity, 
+  dayActivities,
   onRemove, 
   onUpdate,
   isDragging = false
@@ -43,6 +45,7 @@ function DraggableScheduleItem({
   const [isEditing, setIsEditing] = useState(false);
   const [notes, setNotes] = useState(scheduledActivity.notes || '');
   const [customDuration, setCustomDuration] = useState(scheduledActivity.customDuration || activity.duration);
+  const [startTime, setStartTime] = useState(scheduledActivity.startTime);
 
   const {
     attributes,
@@ -60,9 +63,22 @@ function DraggableScheduleItem({
   };
 
   const handleSave = () => {
+    const endTime = new Date(startTime.getTime() + customDuration * 60000);
+    
+    // Check for time conflicts with other activities
+    const conflict = checkTimeConflicts(dayActivities, scheduledActivity.id, startTime, endTime);
+    
+    if (conflict.hasConflict) {
+      const errorMessage = getTimeConflictMessage(conflict.conflictType);
+      alert(`⏰ Time Conflict!\n\n${errorMessage}\n\n💡 Tip: You can also drag and drop activities to reorder them!`);
+      return;
+    }
+    
     onUpdate({ 
       notes,
-      customDuration: customDuration !== activity.duration ? customDuration : undefined
+      customDuration: customDuration !== activity.duration ? customDuration : undefined,
+      startTime,
+      endTime
     });
     setIsEditing(false);
   };
@@ -129,6 +145,45 @@ function DraggableScheduleItem({
               {/* Editing section */}
               {isEditing ? (
                 <div className="mt-3 space-y-3">
+                  {/* Time inputs */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Start Time
+                      </label>
+                      <input
+                        type="time"
+                        value={startTime.toTimeString().slice(0, 5)}
+                        onChange={(e) => {
+                          const [hours, minutes] = e.target.value.split(':').map(Number);
+                          const newStartTime = new Date(startTime);
+                          newStartTime.setHours(hours, minutes, 0, 0);
+                          setStartTime(newStartTime);
+                        }}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        End Time
+                      </label>
+                      <input
+                        type="time"
+                        value={new Date(startTime.getTime() + customDuration * 60000).toTimeString().slice(0, 5)}
+                        onChange={(e) => {
+                          const [hours, minutes] = e.target.value.split(':').map(Number);
+                          const newEndTime = new Date(startTime);
+                          newEndTime.setHours(hours, minutes, 0, 0);
+                          const newDuration = Math.round((newEndTime.getTime() - startTime.getTime()) / 60000);
+                          if (newDuration > 0) {
+                            setCustomDuration(newDuration);
+                          }
+                        }}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  
                   {/* Duration input */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -191,7 +246,7 @@ function DraggableScheduleItem({
                 variant="ghost"
                 onClick={() => setIsEditing(!isEditing)}
                 className="w-8 h-8 p-0"
-                title="Edit duration & notes"
+                title="Edit time, duration & notes"
               >
                 <Edit3 className="w-4 h-4" />
               </Button>
@@ -327,6 +382,7 @@ export function DraggableSchedule({
                 key={scheduledActivity.id}
                 scheduledActivity={scheduledActivity}
                 activity={activityData}
+                dayActivities={activities}
                 onRemove={() => onRemoveActivity(scheduledActivity.id)}
                 onUpdate={(updates) => onUpdateActivity(scheduledActivity.id, updates)}
               />
@@ -340,6 +396,7 @@ export function DraggableSchedule({
           <DraggableScheduleItem
             scheduledActivity={activeActivity}
             activity={activeActivityData}
+            dayActivities={activities}
             onRemove={() => {}}
             onUpdate={() => {}}
             isDragging={true}

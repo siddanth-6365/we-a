@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Activity, ScheduledActivity, WeekendPlan, WeekendTheme } from '@/types';
+import { Activity, ScheduledActivity, WeekendPlan, WeekendTheme, DayTimeBounds } from '@/types';
 import { ACTIVITIES } from '@/data/activities';
 import { generateId } from '@/lib/utils';
 
@@ -22,6 +22,7 @@ interface WeekendStore {
   deletePlan: (planId: string) => void;
   setTheme: (theme: WeekendTheme | null) => void;
   clearCurrentPlan: () => void;
+  updateTimeBounds: (day: 'saturday' | 'sunday', timeBounds: DayTimeBounds) => void;
   
   // Computed getters
   getSaturdayActivities: () => ScheduledActivity[];
@@ -38,6 +39,10 @@ const createDefaultPlan = (name: string = 'My Weekend Plan', theme?: WeekendThem
     theme,
     saturday: [],
     sunday: [],
+    timeBounds: {
+      saturday: { startHour: 8, endHour: 21 }, // 8am to 9pm
+      sunday: { startHour: 8, endHour: 21 }    // 8am to 9pm
+    },
     createdAt: now,
     updatedAt: now
   };
@@ -104,17 +109,77 @@ export const useWeekendStore = create<WeekendStore>()(
         const { currentPlan } = get();
         if (!currentPlan) return;
 
-        const updateDay = (activities: ScheduledActivity[]) =>
-          activities.map(activity =>
-            activity.id === scheduledActivityId
-              ? { ...activity, ...updates }
-              : activity
+        // Find which day contains this activity
+        let targetDay: 'saturday' | 'sunday' | null = null;
+        let dayActivities: ScheduledActivity[] = [];
+        
+        if (currentPlan.saturday.some(a => a.id === scheduledActivityId)) {
+          targetDay = 'saturday';
+          dayActivities = currentPlan.saturday;
+        } else if (currentPlan.sunday.some(a => a.id === scheduledActivityId)) {
+          targetDay = 'sunday';
+          dayActivities = currentPlan.sunday;
+        }
+
+        if (!targetDay) return;
+
+        // Update the specific activity
+        let updatedDayActivities = dayActivities.map(activity =>
+          activity.id === scheduledActivityId
+            ? { ...activity, ...updates }
+            : activity
+        );
+
+        // If duration or start time changed, auto-adjust subsequent activities
+        if (updates.customDuration !== undefined || updates.startTime) {
+          const sortedActivities = [...updatedDayActivities].sort(
+            (a, b) => a.startTime.getTime() - b.startTime.getTime()
           );
+          
+          const updatedActivityIndex = sortedActivities.findIndex(a => a.id === scheduledActivityId);
+          const updatedActivity = sortedActivities[updatedActivityIndex];
+          
+          if (updatedActivity) {
+            const newEndTime = new Date(updatedActivity.startTime.getTime() + (updates.customDuration || updatedActivity.customDuration || 60) * 60000);
+            
+            // Adjust all subsequent activities
+            for (let i = updatedActivityIndex + 1; i < sortedActivities.length; i++) {
+              const currentActivity = sortedActivities[i];
+              const newStartTime = new Date(newEndTime.getTime());
+              
+              // Check if this would push the activity beyond day bounds
+              const dayEnd = new Date(newStartTime);
+              dayEnd.setHours(currentPlan.timeBounds[targetDay].endHour, 0, 0, 0);
+              
+              if (newStartTime.getTime() >= dayEnd.getTime()) {
+                // Remove activities that would go beyond day bounds
+                sortedActivities.splice(i);
+                break;
+              }
+              
+              const activityDuration = currentActivity.customDuration || 60;
+              const newEndTimeForThis = new Date(newStartTime.getTime() + activityDuration * 60000);
+              
+              if (newEndTimeForThis.getTime() > dayEnd.getTime()) {
+                // Remove this activity if it would go beyond day bounds
+                sortedActivities.splice(i, 1);
+                i--; // Adjust index since we removed an item
+                continue;
+              }
+              
+              currentActivity.startTime = newStartTime;
+              currentActivity.endTime = newEndTimeForThis;
+              newEndTime.setTime(newEndTimeForThis.getTime());
+            }
+            
+            // Update the day activities with the sorted and adjusted activities
+            updatedDayActivities = sortedActivities;
+          }
+        }
 
         const updatedPlan = {
           ...currentPlan,
-          saturday: updateDay(currentPlan.saturday),
-          sunday: updateDay(currentPlan.sunday),
+          [targetDay]: updatedDayActivities,
           updatedAt: new Date()
         };
 
@@ -125,9 +190,40 @@ export const useWeekendStore = create<WeekendStore>()(
         const { currentPlan } = get();
         if (!currentPlan) return;
 
+        // Recalculate start and end times based on new order
+        const recalculatedOrder = [...newOrder];
+        const timeBounds = currentPlan.timeBounds[day];
+        const dayStart = new Date();
+        dayStart.setDate(dayStart.getDate() + (day === 'saturday' ? (6 - dayStart.getDay()) : (7 - dayStart.getDay())));
+        dayStart.setHours(timeBounds.startHour, 0, 0, 0);
+
+        let currentTime = new Date(dayStart);
+
+        for (let i = 0; i < recalculatedOrder.length; i++) {
+          const activity = recalculatedOrder[i];
+          
+          // Get the duration from the activity's customDuration or calculate from existing times
+          let duration;
+          if (activity.customDuration) {
+            duration = activity.customDuration;
+          } else {
+            // Calculate duration from existing start and end times
+            duration = (activity.endTime.getTime() - activity.startTime.getTime()) / 60000;
+          }
+          
+          // Set new start time
+          activity.startTime = new Date(currentTime);
+          
+          // Calculate new end time
+          activity.endTime = new Date(currentTime.getTime() + duration * 60000);
+          
+          // Move current time to the end of this activity
+          currentTime = new Date(activity.endTime);
+        }
+
         const updatedPlan = {
           ...currentPlan,
-          [day]: newOrder,
+          [day]: recalculatedOrder,
           updatedAt: new Date()
         };
 
@@ -244,6 +340,22 @@ export const useWeekendStore = create<WeekendStore>()(
         }
 
         return slots;
+      },
+
+      updateTimeBounds: (day, timeBounds) => {
+        const { currentPlan } = get();
+        if (!currentPlan) return;
+
+        const updatedPlan = {
+          ...currentPlan,
+          timeBounds: {
+            ...currentPlan.timeBounds,
+            [day]: timeBounds
+          },
+          updatedAt: new Date()
+        };
+
+        set({ currentPlan: updatedPlan });
       }
     }),
     {
