@@ -42,6 +42,7 @@ function DraggableScheduleItem({
 }: DraggableScheduleItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [notes, setNotes] = useState(scheduledActivity.notes || '');
+  const [customDuration, setCustomDuration] = useState(scheduledActivity.customDuration || activity.duration);
 
   const {
     attributes,
@@ -58,8 +59,11 @@ function DraggableScheduleItem({
     opacity: isSortableDragging ? 0.5 : 1,
   };
 
-  const handleSaveNotes = () => {
-    onUpdate({ notes });
+  const handleSave = () => {
+    onUpdate({ 
+      notes,
+      customDuration: customDuration !== activity.duration ? customDuration : undefined
+    });
     setIsEditing(false);
   };
 
@@ -122,18 +126,46 @@ function DraggableScheduleItem({
                 </div>
               )}
 
-              {/* Notes section */}
+              {/* Editing section */}
               {isEditing ? (
-                <div className="mt-3 space-y-2">
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Add notes for this activity..."
-                    className="w-full text-sm border border-gray-300 rounded-md px-2 py-1 resize-none"
-                    rows={2}
-                  />
+                <div className="mt-3 space-y-3">
+                  {/* Duration input */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Duration (minutes)
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number"
+                        min="15"
+                        max="480"
+                        step="15"
+                        value={customDuration}
+                        onChange={(e) => setCustomDuration(parseInt(e.target.value) || 60)}
+                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <span className="text-sm text-gray-600">
+                        ({Math.floor(customDuration / 60)}h {customDuration % 60}m)
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Notes input */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Notes
+                    </label>
+                    <textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Add notes for this activity..."
+                      className="w-full text-sm border border-gray-300 rounded-md px-2 py-1 resize-none"
+                      rows={2}
+                    />
+                  </div>
+                  
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={handleSaveNotes}>
+                    <Button size="sm" onClick={handleSave}>
                       Save
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>
@@ -159,7 +191,7 @@ function DraggableScheduleItem({
                 variant="ghost"
                 onClick={() => setIsEditing(!isEditing)}
                 className="w-8 h-8 p-0"
-                title="Edit notes"
+                title="Edit duration & notes"
               >
                 <Edit3 className="w-4 h-4" />
               </Button>
