@@ -284,7 +284,7 @@ export function DraggableSchedule({
                 duration: 60,
                 icon: '📍',
                 mood: ['happy'] as Activity['mood'],
-                isFlexible: true,
+                isFlexible: false, // Don't mark as flexible by default
                 tags: ['location-based'],
                 color: '#3B82F6'
               };

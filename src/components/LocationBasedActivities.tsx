@@ -324,7 +324,7 @@ export function LocationBasedActivities({ onAddActivity, scheduledActivityIds }:
                   <Button
                     variant={isScheduled ? "secondary" : "default"}
                     size="sm"
-                    onClick={() => onAddActivity(convertToActivity(activity))}
+                    onClick={() => handleAddClick(activity)}
                     disabled={isScheduled}
                     className="flex-shrink-0"
                   >
@@ -344,6 +344,59 @@ export function LocationBasedActivities({ onAddActivity, scheduledActivityIds }:
           )}
         </div>
       </CardContent>
+
+      {/* Duration Modal */}
+      {showDurationModal && selectedActivity && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowDurationModal(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Set Duration for {selectedActivity.name}
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  How long will you spend here? (minutes)
+                </label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="number"
+                    min="15"
+                    max="480"
+                    step="15"
+                    value={customDuration}
+                    onChange={(e) => setCustomDuration(parseInt(e.target.value) || 60)}
+                    className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <span className="text-sm text-gray-600">
+                    ({Math.floor(customDuration / 60)}h {customDuration % 60}m)
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDurationModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirmAdd}
+                  className="flex-1"
+                >
+                  Add to Schedule
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
