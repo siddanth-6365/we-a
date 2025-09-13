@@ -1,207 +1,120 @@
 # 🗓️ Weekendly - Weekend Planner
 
-**Design your perfect weekend by choosing activities, moods, and themes. Create a personalized Saturday-Sunday schedule that makes every weekend memorable.**
+**A modern weekend planning application built with Next.js 15, TypeScript, and Tailwind CSS. Design your perfect weekend by choosing activities, moods, and themes with an intuitive drag-and-drop interface.**
 
-![Weekendly](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-teal?style=for-the-badge&logo=tailwindcss)
+## 🚀 Quick Start
 
-## ✨ Features
+```bash
+# Install dependencies
+npm install
 
-### Core Functionality
-- **🎯 Activity Browser**: Explore 25+ curated activities across 8 categories
-- **📅 Interactive Schedule**: Build your weekend timeline with drag-and-drop
-- **🎨 Weekend Themes**: Choose from 6 pre-built themes (lazy, adventurous, family, etc.)
-- **💾 Persistent Storage**: Save multiple weekend plans locally
-- **📤 Share & Export**: Generate calendar files, print-friendly versions, and shareable text
+# Start development server
+npm run dev
 
-### Enhanced User Experience
-- **🏃‍♀️ Drag & Drop**: Reorder activities with smooth animations
-- **🎭 Mood Tracking**: Activities tagged with moods (energetic, relaxed, happy, etc.)
-- **⏰ Smart Scheduling**: Automatic time slot management
-- **📱 Responsive Design**: Works beautifully on all devices
-- **🎨 Visual Polish**: Modern UI with smooth animations and micro-interactions
-
-### Advanced Features
-- **🔍 Smart Filtering**: Filter by category, mood, and search terms
-- **📋 Activity Details**: Rich metadata including duration, flexibility, and descriptions
-- **📊 Plan Analytics**: View total duration and activity counts
-- **🗒️ Notes Support**: Add personal notes to any activity
-- **🎁 Template System**: Quick-start with pre-configured weekend themes
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+ 
-- npm, yarn, or pnpm
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd weekendly
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   # or
-   yarn install
-   # or
-   pnpm install
-   ```
-
-3. **Start the development server**
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   # or
-   pnpm dev
-   ```
-
-4. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
-
-## 🏗️ Tech Stack
-
-### Core Framework
-- **Next.js 15** - React framework with App Router
-- **TypeScript** - Type-safe development
-- **Tailwind CSS** - Utility-first styling
-
-### State Management & Data
-- **Zustand** - Lightweight state management with persistence
-- **localStorage** - Client-side data persistence
-
-### UI & Interactions
-- **@dnd-kit** - Drag and drop functionality
-- **Framer Motion** - Smooth animations and transitions
-- **Lucide React** - Beautiful icon system
-- **Radix UI** - Accessible headless components
-
-### Development Tools
-- **ESLint** - Code linting
-- **TypeScript** - Static type checking
-- **Tailwind CSS** - Responsive design system
-
-## 📁 Project Structure
-
-```
-src/
-├── app/                    # Next.js app directory
-│   ├── globals.css        # Global styles
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Main application page
-├── components/            # React components
-│   ├── ui/               # Reusable UI components
-│   │   ├── Button.tsx
-│   │   ├── Card.tsx
-│   │   └── Badge.tsx
-│   ├── ActivityBrowser.tsx
-│   ├── ActivityCard.tsx
-│   ├── WeekendSchedule.tsx
-│   ├── DraggableSchedule.tsx
-│   ├── ThemeSelector.tsx
-│   ├── ShareExport.tsx
-│   └── WelcomeScreen.tsx
-├── data/                  # Static data and configurations
-│   └── activities.ts     # Activity definitions and templates
-├── lib/                   # Utility functions
-│   └── utils.ts          # Common utilities
-├── store/                 # State management
-│   └── useWeekendStore.ts # Zustand store
-└── types/                 # TypeScript type definitions
-    └── index.ts          # Application types
+# Open http://localhost:3000
 ```
 
-## 🎯 Component Architecture
+## 🏗️ Architecture & Design Decisions
 
-### Core Components
-- **ActivityBrowser**: Filterable gallery of activities with search and categorization
-- **WeekendSchedule**: Timeline view with day-by-day activity management
-- **DraggableSchedule**: Drag-and-drop interface for reordering activities
-- **ActivityCard**: Rich activity presentation with metadata and actions
-- **ThemeSelector**: Weekend theme picker with template application
-- **ShareExport**: Multi-format export functionality (calendar, print, text)
-- **WelcomeScreen**: Onboarding experience for new users
+### Component Design Philosophy
 
-### Design System
-- **Consistent spacing**: 4px base unit system
-- **Color palette**: Semantic color system with category-specific colors
-- **Typography**: Clear hierarchy with readable font sizes
-- **Responsive breakpoints**: Mobile-first design approach
+**Modular Component Architecture**: The application follows a clean separation of concerns with distinct layers:
 
-## 🔧 Key Features Implementation
+- **UI Components** (`/components/ui/`): Reusable, headless components (Button, Card, Badge)
+- **Feature Components** (`/components/`): Business logic components (ActivityBrowser, WeekendSchedule)
+- **Layout Components**: Structural components (MainLayout, AppHeader)
+- **Custom Hooks** (`/hooks/`): Centralized business logic and state management
 
-### State Management
+**Key Design Trade-offs**:
+- **Performance vs. Simplicity**: Removed excessive memoization (`React.memo`, `useMemo`) that was causing UI re-rendering issues
+- **Type Safety vs. Flexibility**: Used strict TypeScript types while allowing dynamic activity data for location-based activities
+- **State Management**: Chose Zustand over Redux for simplicity, with localStorage persistence for offline functionality
+
+### State Management Strategy
+
+**Centralized Business Logic**: Created `useWeekendPlan` hook to encapsulate all weekend planning logic, separating concerns from UI components.
+
 ```typescript
-// Zustand store with persistence
-const useWeekendStore = create()(
-  persist(
-    (set, get) => ({
-      // State and actions
-    }),
-    { name: 'weekendly-storage' }
-  )
-)
+// Custom hook pattern for business logic
+export function useWeekendPlan() {
+  const { currentPlan, activities, ... } = useWeekendStore();
+  
+  // Centralized handlers
+  const handleAddActivity = useCallback((activity: Activity) => {
+    // Smart scheduling logic
+    const capacity = checkDayCapacity(dayActivities, activity.duration, targetDay, timeBounds);
+    if (!capacity.canFit) {
+      alert(`Not enough time in ${targetDay}!`);
+      return;
+    }
+    // Auto-schedule logic
+  }, [dependencies]);
+}
 ```
 
-### Drag & Drop
+**Data Structure Evolution**: 
+- **ScheduledActivity** interface extended to store full `Activity` data for location-based activities
+- **Configurable Time Bounds**: Replaced hardcoded 8am-9pm with user-configurable day boundaries
+- **Smart Scheduling**: Auto-adjusts subsequent activities when duration or start time changes
+
+### UI Polish & User Experience
+
+**Responsive Design Approach**:
+- **Mobile-First**: All components designed for mobile, enhanced for desktop
+- **Flexible Layouts**: Used CSS Grid and Flexbox for adaptive layouts
+- **Touch-Friendly**: Proper button sizes and spacing for mobile interaction
+
+**Visual Design System**:
+- **Category-Based Colors**: Dynamic color assignment for location-based activities
+- **Consistent Spacing**: 4px base unit system throughout
+- **Smooth Animations**: Framer Motion for drag-and-drop and state transitions
+
+### Creative Features & Integrations
+
+**Location-Based Activities**:
+- **Server-Side API Integration**: Moved Geoapify API calls to Next.js API routes for security
+- **Dynamic Activity Creation**: Convert location data to Activity objects with custom durations
+- **Category-Based Styling**: Automatic color assignment based on activity category
+
+**Smart Time Management**:
+- **Conflict Detection**: Validates time overlaps when editing activities
+- **Auto-Adjustment**: Automatically reschedules subsequent activities when changes are made
+- **Configurable Bounds**: Users can set custom start/end times for each day
+
+**Advanced Scheduling Logic**:
 ```typescript
-// @dnd-kit implementation for smooth reordering
-<DndContext
-  sensors={sensors}
-  collisionDetection={closestCenter}
-  onDragEnd={handleDragEnd}
->
-  <SortableContext items={activities}>
-    {/* Draggable items */}
-  </SortableContext>
-</DndContext>
+// Smart slot finding with capacity checking
+const findNextAvailableSlot = (activities, duration, day, timeBounds) => {
+  const { start: dayStart, end: dayEnd } = getDayTimeBounds(day, timeBounds);
+  // Complex algorithm to find optimal time slots
+};
+
+// Time conflict validation
+const checkTimeConflicts = (activities, targetId, newStart, newEnd) => {
+  // Validates against all other activities
+};
 ```
 
-### Export Functionality
-- **iCalendar**: RFC-compliant calendar files for universal compatibility
-- **Print**: Styled HTML generation for physical copies
-- **Text**: Formatted plain text for messaging and social media
-- **Social**: Direct Twitter integration for sharing
+**Export & Sharing System**:
+- **Multi-Format Export**: iCal, print-friendly HTML, and shareable text
+- **Location Activity Support**: Ensures all activity types are included in exports
+- **Social Integration**: Direct sharing capabilities
 
-## 📊 Performance Optimizations
+### Technical Implementation Highlights
 
+**Performance Optimizations**:
+- **Efficient Re-rendering**: Removed unnecessary memoization that was blocking updates
+- **Smart State Updates**: Zustand store updates trigger minimal re-renders
 - **Lazy Loading**: Components loaded on demand
-- **Memoization**: Expensive calculations cached
-- **Efficient Rendering**: Optimized re-render cycles
-- **Local Storage**: Client-side persistence reduces server dependency
 
-## 🎨 Design Principles
+**Type Safety**:
+- **Comprehensive TypeScript**: Strict typing throughout the application
+- **Interface Evolution**: Types adapted as features were added (location activities, time bounds)
+- **API Type Safety**: Proper interfaces for external API responses
 
-1. **User-Centric**: Interface designed around weekend planning workflow
-2. **Visual Hierarchy**: Clear information architecture
-3. **Accessibility**: Semantic HTML, keyboard navigation, ARIA labels
-4. **Mobile-First**: Responsive design for all screen sizes
-5. **Delightful Interactions**: Smooth animations and feedback
+**Error Handling**:
+- **Graceful Degradation**: Fallback data for API failures
+- **User Feedback**: Clear error messages and validation
+- **Conflict Resolution**: Smart suggestions for time conflicts
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **Next.js Team** - For the amazing framework
-- **Tailwind CSS** - For the utility-first CSS framework
-- **Lucide** - For the beautiful icon system
-- **@dnd-kit** - For the drag and drop functionality
-
----
-
-**Built with ❤️ for better weekends**
+This architecture prioritizes maintainability, user experience, and extensibility while keeping the codebase clean and performant.
