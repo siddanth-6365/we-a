@@ -295,8 +295,14 @@ export const useWeekendStore = create<WeekendStore>()(
 
         const allScheduled = [...currentPlan.saturday, ...currentPlan.sunday];
         return allScheduled.reduce((total, scheduled) => {
+          // First try to get duration from activityData (for location-based activities)
+          if (scheduled.activityData) {
+            return total + (scheduled.customDuration || scheduled.activityData.duration || 0);
+          }
+          
+          // Fallback to main activities array
           const activity = activities.find(a => a.id === scheduled.activityId);
-          return total + (activity?.duration || 0);
+          return total + (scheduled.customDuration || activity?.duration || 0);
         }, 0);
       },
 

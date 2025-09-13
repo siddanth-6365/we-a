@@ -65,33 +65,7 @@ export interface UserLocation {
   address?: string;
 }
 
-// Supported Geoapify categories for each activity type
-const SUPPORTED_CATEGORIES = {
-  restaurant: [
-    'catering.restaurant', 'catering.fast_food', 'catering.food_court'
-  ],
-  cafe: [
-    'catering.cafe', 'catering.ice_cream'
-  ],
-  park: [
-    'leisure.park', 'natural.water', 'natural.forest'
-  ],
-  museum: [
-    'entertainment.museum', 'entertainment.culture', 'tourism.attraction'
-  ],
-  fitness: [
-    'sport.fitness', 'sport.swimming_pool', 'sport.sports_centre'
-  ],
-  shopping: [
-    'commercial.shopping_mall', 'commercial.marketplace', 'commercial.department_store'
-  ],
-  entertainment: [
-    'entertainment.cinema', 'entertainment', 'entertainment.activity_park'
-  ],
-  attraction: [
-    'tourism.attraction', 'tourism.sights', 'entertainment.zoo'
-  ]
-};
+// Note: SUPPORTED_CATEGORIES moved to server-side API route
 
 // Activity type mappings for Geoapify Places (using only supported categories)
 const ACTIVITY_TYPE_MAPPINGS = {
@@ -154,11 +128,8 @@ const ACTIVITY_TYPE_MAPPINGS = {
 };
 
 class LocationService {
-  private apiKey: string;
-  
   constructor() {
-    // Geoapify API key from environment variables or default demo key
-    this.apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY || '4d4deba9f4e54a14bb7c4b869ee98b79';
+    // No API key needed - using server-side API routes
   }
 
   // Get user's current location
@@ -198,99 +169,61 @@ class LocationService {
     });
   }
 
-  // Reverse geocode coordinates to address using Geoapify
+  // Reverse geocode coordinates to address using server-side API
   private async reverseGeocode(lat: number, lng: number): Promise<string> {
     try {
       const response = await fetch(
-        `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${this.apiKey}`
+        `/api/location/reverse-geocode?lat=${lat}&lng=${lng}`
       );
       
-      const data = await response.json();
-      
-      if (data.features && data.features.length > 0) {
-        const feature = data.features[0];
-        return feature.properties.formatted || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      if (!response.ok) {
+        throw new Error(`Reverse geocoding failed: ${response.statusText}`);
       }
       
-      return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      const data = await response.json();
+      return data.address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     } catch (error) {
       console.error('Reverse geocoding failed:', error);
       return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     }
   }
 
-  // Search for places near a location using Geoapify
+  // Search for places near a location using server-side API
   async searchNearbyPlaces(
     location: UserLocation,
     radius: number = 5000,
     categories?: string[]
   ): Promise<GeoapifyPlace[]> {
     try {
-      // Create bounding box around location (Geoapify uses rect filter)
-      const radiusInDegrees = radius / 111320; // Convert meters to degrees (rough approximation)
-      const minLat = location.lat - radiusInDegrees;
-      const maxLat = location.lat + radiusInDegrees;
-      const minLng = location.lng - radiusInDegrees;
-      const maxLng = location.lng + radiusInDegrees;
+      // Build query parameters
+      const params = new URLSearchParams({
+        lat: location.lat.toString(),
+        lng: location.lng.toString(),
+        radius: radius.toString()
+      });
       
-      // Build category filter - Geoapify requires either 'type' or 'categories' parameter
-      let categoryFilter = '';
       if (categories && categories.length > 0) {
-        // Convert our activity types to supported Geoapify categories
-        const geoapifyCategories = categories.flatMap(category => {
-          return SUPPORTED_CATEGORIES[category as keyof typeof SUPPORTED_CATEGORIES] || [];
-        });
-        
-        if (geoapifyCategories.length > 0) {
-          categoryFilter = `&categories=${geoapifyCategories.join(',')}`;
-        }
-      } else {
-        // If no specific categories, use a broad set of supported categories for general places
-        const defaultCategories = [
-          'catering.restaurant',
-          'catering.cafe', 
-          'leisure.park',
-          'entertainment.museum',
-          'sport.fitness',
-          'commercial.shopping_mall',
-          'entertainment.cinema',
-          'tourism.attraction'
-        ];
-        categoryFilter = `&categories=${defaultCategories.join(',')}`;
+        params.append('categories', categories.join(','));
       }
       
-      const response = await fetch(
-        `https://api.geoapify.com/v2/places?` +
-        `filter=rect:${minLng},${minLat},${maxLng},${maxLat}` +
-        `${categoryFilter}&limit=50&apiKey=${this.apiKey}`
-      );
+      const response = await fetch(`/api/location/places?${params.toString()}`);
       
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Geoapify API error:', errorData);
-        throw new Error(`API request failed: ${errorData.message || response.statusText}`);
+        console.error('Places API error:', errorData);
+        throw new Error(`API request failed: ${errorData.error || response.statusText}`);
       }
       
       const data = await response.json();
       
-      if (data.features && Array.isArray(data.features)) {
-        // Filter by actual distance and sort by proximity
-        const placesWithDistance = data.features.map((place: GeoapifyPlace) => {
-          const [lng, lat] = place.geometry.coordinates;
-          const distance = this.calculateDistance(location.lat, location.lng, lat, lng);
-          return { place, distance };
-        }).filter((item: { place: GeoapifyPlace; distance: number }) => item.distance <= radius / 1000) // Filter by radius in km
-          .sort((a: { place: GeoapifyPlace; distance: number }, b: { place: GeoapifyPlace; distance: number }) => a.distance - b.distance) // Sort by distance
-          .slice(0, 20) // Limit to 20 results
-          .map((item: { place: GeoapifyPlace; distance: number }) => item.place);
-        
-        return placesWithDistance;
+      if (data.places && Array.isArray(data.places)) {
+        return data.places;
       } else {
         console.warn('No places found, using mock data');
         return this.getMockPlaces(location);
       }
     } catch (error) {
-      console.error('Geoapify places search failed:', error);
+      console.error('Places search failed:', error);
       return this.getMockPlaces(location);
     }
   }
