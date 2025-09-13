@@ -68,6 +68,7 @@ export default function Home() {
     >
       {/* Weekend Overview */}
       <WeekendOverview
+        key={`overview-${totalDuration}-${saturdayActivities.length}-${sundayActivities.length}`}
         totalDuration={totalDuration}
         saturdayCount={saturdayActivities.length}
         sundayCount={sundayActivities.length}

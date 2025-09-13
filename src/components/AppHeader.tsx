@@ -48,11 +48,11 @@ export function AppHeader({
                     <CalendarDays className="w-4 h-4" />
                     <span className="truncate max-w-[200px]">{currentPlan.name}</span>
                   </div>
-                  {totalDuration > 0 && (
+                  {/* {totalDuration > 0 && (
                     <Badge variant="secondary">
                       {Math.floor(totalDuration / 60)}h {totalDuration % 60}m planned
                     </Badge>
-                  )}
+                  )} */}
                 </div>
               </>
             )}
@@ -70,14 +70,14 @@ export function AppHeader({
                 </Button>
               )}
 
-              <Button 
+              {/* <Button 
                 size="sm" 
                 onClick={onSavePlan} 
                 className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3"
               >
                 <Save className="w-4 h-4" />
                 <span className="hidden sm:inline">Save Plan</span>
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>

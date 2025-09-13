@@ -10,38 +10,13 @@ interface WeekendOverviewProps {
   onClearSchedule: () => void;
 }
 
-export function WeekendOverview({ 
-  totalDuration, 
-  saturdayCount, 
-  sundayCount, 
-  onClearSchedule 
+export function WeekendOverview({
+  totalDuration,
+  saturdayCount,
+  sundayCount,
+  onClearSchedule
 }: WeekendOverviewProps) {
   const totalActivities = saturdayCount + sundayCount;
-
-//   if (totalActivities === 0) {
-//     return (
-//       <Card className="border-dashed border-2 border-gray-300 bg-gray-50/50">
-//         <CardContent className="p-8 text-center">
-//           <div className="text-4xl mb-4">🗓️</div>
-//           <h2 className="text-xl font-semibold text-gray-900 mb-2">
-//             Your Weekend Awaits!
-//           </h2>
-//           <p className="text-gray-700 mb-4">
-//             Start building your perfect weekend by adding activities or choosing a theme.
-//           </p>
-//           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-//             <Button
-//               onClick={() => window.location.reload()}
-//               className="flex items-center gap-2"
-//             >
-//               <RotateCcw className="w-4 h-4" />
-//               Get Started
-//             </Button>
-//           </div>
-//         </CardContent>
-//       </Card>
-//     );
-//   }
 
   return (
     <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
