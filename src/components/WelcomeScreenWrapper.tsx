@@ -2,10 +2,11 @@
 
 import { memo } from 'react';
 import { WelcomeScreen } from './WelcomeScreen';
+import { WeekendTemplate } from '@/types';
 
 interface WelcomeScreenWrapperProps {
   onGetStarted: () => void;
-  onTemplateSelect: (template: any) => void;
+  onTemplateSelect: (template: WeekendTemplate) => void;
   hasExistingPlan: boolean;
   onContinueExisting: () => void;
 }

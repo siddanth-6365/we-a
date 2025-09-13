@@ -21,7 +21,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'Experiment with a new cuisine or cooking technique',
     duration: 90,
     icon: '👨‍🍳',
-    mood: ['productive', 'creative'],
+    mood: ['productive', 'cozy'],
     isFlexible: true,
     tags: ['home', 'creative', 'learning'],
     color: '#F59E0B'

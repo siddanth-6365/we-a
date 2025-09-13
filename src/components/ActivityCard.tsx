@@ -119,7 +119,7 @@ export function ActivityCard({
             </div>
             
             {/* Tags */}
-            {activity.tags.length > 0 && (
+            {activity.tags && activity.tags.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {activity.tags.slice(0, 3).map((tag) => (
                   <Badge key={tag} variant="secondary" className="text-xs">

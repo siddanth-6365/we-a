@@ -1,5 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 
+interface GeoapifyFeature {
+  geometry: {
+    coordinates: [number, number];
+  };
+  properties: {
+    name: string;
+    formatted: string;
+    categories: string[];
+    [key: string]: unknown;
+  };
+}
+
+interface PlaceWithDistance {
+  place: GeoapifyFeature;
+  distance: number;
+}
+
 // Supported Geoapify categories for each activity type
 const SUPPORTED_CATEGORIES = {
   restaurant: [
@@ -113,7 +130,7 @@ export async function GET(request: NextRequest) {
       // Filter by actual distance and sort by proximity
 
       const placesWithDistance = data.features
-        .map((place: any) => {
+        .map((place: GeoapifyFeature) => {
           const [placeLng, placeLat] = place.geometry.coordinates;
           const distance = calculateDistance(
             parseFloat(lat),
@@ -124,17 +141,14 @@ export async function GET(request: NextRequest) {
           return { place, distance };
         })
         .filter(
-          (item: { place: any; distance: number }) =>
+          (item: PlaceWithDistance) =>
             item.distance <= parseInt(radius) / 1000
         )
         .sort(
-          (
-            a: { place: any; distance: number },
-            b: { place: any; distance: number }
-          ) => a.distance - b.distance
+          (a: PlaceWithDistance, b: PlaceWithDistance) => a.distance - b.distance
         )
         .slice(0, 20)
-        .map((item: { place: any; distance: number }) => item.place);
+        .map((item: PlaceWithDistance) => item.place);
 
       return NextResponse.json({ places: placesWithDistance });
     } else {

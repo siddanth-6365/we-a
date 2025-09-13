@@ -21,7 +21,13 @@ const categoryLabels: Record<ActivityCategory, string> = {
   social: 'Social',
   creative: 'Creative',
   learning: 'Learning',
-  home: 'Home'
+  home: 'Home',
+  'Food & Dining': 'Food & Dining',
+  'Culture': 'Culture',
+  'Fitness': 'Fitness',
+  'Shopping': 'Shopping',
+  'Adventure': 'Adventure',
+  'Outdoor': 'Outdoor'
 };
 
 const moodLabels: Record<Mood, string> = {
@@ -50,7 +56,7 @@ export function ActivityBrowser({
       // Search filter
       const matchesSearch = activity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            activity.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           activity.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+                           (activity.tags && activity.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
 
       // Category filter
       const matchesCategory = selectedCategories.length === 0 || 
