@@ -1,266 +1,283 @@
-# 🗓️ Weekendly - Technical Documentation
+# Weekendly - Technical Documentation
 
 ## Overview
 
-Weekendly is a modern weekend planning application built with Next.js 15, TypeScript, and Tailwind CSS. It enables users to create personalized weekend schedules by selecting activities, managing time slots, and integrating location-based recommendations through external APIs.
+Weekendly is a modern weekend planning application built with Next.js 15, React 19, and TypeScript. It enables users to create, manage, and share personalized weekend schedules with intelligent scheduling features and location-based activity discovery.
 
-## 🏗️ Architecture & Design Decisions
+## Major Design Decisions and Trade-offs
 
-### Component Design Philosophy
+### 1. Architecture & Framework Choice
 
-**Modular Component Architecture**: The application follows a clean separation of concerns with distinct architectural layers:
+**Decision**: Next.js 15 with App Router and React 19
+- **Rationale**: Leverages the latest React Server Components and streaming capabilities for optimal performance
 
-- **UI Components** (`/components/ui/`): Reusable, headless components (Button, Card, Badge) with consistent styling
-- **Feature Components** (`/components/`): Business logic components (ActivityBrowser, WeekendSchedule, DraggableSchedule)
-- **Layout Components**: Structural components (MainLayout, AppHeader) for consistent page structure
-- **Custom Hooks** (`/hooks/`): Centralized business logic and state management separation
+### 2. State Management Strategy
 
-**Key Design Trade-offs**:
+**Decision**: Zustand with persistence middleware
+- **Rationale**: Lightweight, TypeScript-first state management with built-in persistence
+- **Key Features**:
+  - Automatic localStorage persistence with date serialization
+  - Computed getters for derived state
 
-1. **Performance vs. Simplicity**: Initially implemented extensive memoization (`React.memo`, `useMemo`) but removed it due to UI re-rendering issues. The trade-off favored simplicity and reactivity over micro-optimizations.
+### 3. Component Architecture
 
-2. **Type Safety vs. Flexibility**: Implemented strict TypeScript types while allowing dynamic activity data for location-based activities through optional `activityData` field in `ScheduledActivity`.
+**Decision**: Compound component pattern with custom hooks
+- **Rationale**: Reusable, composable components with clear separation of concerns
+- **Structure**:
+  - **Layout Components**: `MainLayout`, `AppHeader` for consistent UI structure
+  - **Feature Components**: `ActivityBrowser`, `DraggableSchedule` for specific functionality
+  - **UI Components**: Custom design system with `Button`, `Card`, `Badge`
+  - **Custom Hooks**: `useWeekendPlan` for business logic abstraction
 
-3. **State Management**: Chose Zustand over Redux for simplicity and developer experience, with localStorage persistence for offline functionality.
+### 4. Data Flow Architecture
 
-### State Management Strategy
+**Decision**: Unidirectional data flow with centralized state
+- **Pattern**: Store → Hook → Component → Actions → Store
+- **Benefits**: Predictable state updates, easy debugging, clear data lineage
+- **Implementation**: Zustand store provides actions, hooks orchestrate UI state, components handle presentation
 
-**Centralized Business Logic**: Created `useWeekendPlan` custom hook to encapsulate all weekend planning logic, separating concerns from UI components.
+## Component Design Patterns
+
+### 1. Compound Component Pattern
 
 ```typescript
-// Custom hook pattern for business logic
-export function useWeekendPlan() {
-  const { currentPlan, activities, ... } = useWeekendStore();
+// MainLayout acts as a container for consistent structure
+<MainLayout currentPlan={plan} totalDuration={duration}>
+  <WeekendSchedule />
+  <ActivityModal />
+</MainLayout>
+```
+
+### 2. Custom Hook Pattern
+
+```typescript
+// useWeekendPlan encapsulates complex business logic
+const {
+  activities,
+  currentPlan,
+  handleAddActivity,
+  handleTemplateApply
+} = useWeekendPlan();
+```
+
+### 3. Render Props & Children Pattern
+
+```typescript
+// Flexible component composition
+<DraggableSchedule
+  activities={saturdayActivities}
+  onReorder={handleReorder}
+  onRemoveActivity={handleRemove}
+/>
+```
+
+### 4. Controlled vs Uncontrolled Components
+
+**Decision**: Primarily controlled components for predictable state
+- **Benefits**: Centralized state management, easier testing, better validation
+- **Exception**: Form inputs with local state for performance optimization
+
+## State Management Architecture
+
+### 1. Store Structure
+
+```typescript
+interface WeekendStore {
+  // Core state
+  activities: Activity[];
+  currentPlan: WeekendPlan | null;
+  savedPlans: WeekendPlan[];
+  selectedTheme: WeekendTheme | null;
   
-  // Centralized handlers with smart scheduling
-  const handleAddActivity = useCallback((activity: Activity) => {
-    const capacity = checkDayCapacity(dayActivities, activity.duration, targetDay, timeBounds);
-    if (!capacity.canFit) {
-      alert(`Not enough time in ${targetDay}!`);
-      return;
+  // Actions (business logic)
+  createNewPlan: (name?, theme?) => void;
+  addActivityToSchedule: (activity, day, startTime) => void;
+  reorderActivities: (day, newOrder) => void;
+  
+  // Computed getters
+  getSaturdayActivities: () => ScheduledActivity[];
+  getTotalPlanDuration: () => number;
+}
+```
+
+### 2. Smart Scheduling Logic
+
+**Key Innovation**: Intelligent time slot management
+- **Conflict Detection**: Prevents overlapping activities
+- **Auto-scheduling**: Finds optimal time slots automatically
+- **Drag & Drop**: Recalculates times when activities are reordered
+- **Time Bounds**: Respects user-defined day start/end times
+
+### 3. Persistence Strategy
+
+```typescript
+// Zustand persist middleware with custom serialization
+persist(
+  store,
+  {
+    name: 'weekendly-storage',
+    partialize: (state) => ({
+      currentPlan: state.currentPlan,
+      savedPlans: state.savedPlans,
+      selectedTheme: state.selectedTheme
+    }),
+    onRehydrateStorage: () => (state) => {
+      // Convert string dates back to Date objects
+      state.currentPlan?.saturday.forEach(activity => {
+        activity.startTime = new Date(activity.startTime);
+        activity.endTime = new Date(activity.endTime);
+      });
     }
-    // Auto-schedule logic with conflict detection
-  }, [dependencies]);
-}
-```
-
-**Data Structure Evolution**:
-- **ScheduledActivity** interface extended to store full `Activity` data for location-based activities
-- **Configurable Time Bounds**: Replaced hardcoded 8am-9pm with user-configurable day boundaries
-- **Smart Scheduling**: Auto-adjusts subsequent activities when duration or start time changes
-
-### UI Polish & User Experience
-
-**Responsive Design Approach**:
-- **Mobile-First**: All components designed for mobile, enhanced for desktop using Tailwind's responsive utilities
-- **Flexible Layouts**: CSS Grid and Flexbox for adaptive layouts with proper touch targets
-- **Touch-Friendly**: Proper button sizes (44px minimum) and spacing for mobile interaction
-
-**Visual Design System**:
-- **Category-Based Colors**: Dynamic color assignment for location-based activities using `CATEGORY_COLORS` mapping
-- **Consistent Spacing**: 4px base unit system throughout the application
-- **Smooth Animations**: Framer Motion for drag-and-drop and state transitions
-
-## 🚀 Creative Features & Integrations
-
-### Location-Based Activities Integration
-
-**Server-Side API Integration**: Moved Geoapify API calls to Next.js API routes for security and better error handling.
-
-```typescript
-// API Route: /api/location/places/route.ts
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const lat = searchParams.get("lat");
-  const lng = searchParams.get("lng");
-  
-  // Secure API key handling
-  const apiKey = process.env.GEOAPIFY_API_KEY;
-  
-  // Category mapping for activity types
-  const SUPPORTED_CATEGORIES = {
-    restaurant: ["catering.restaurant", "catering.fast_food"],
-    cafe: ["catering.cafe", "catering.ice_cream"],
-    // ... more categories
-  };
-}
-```
-
-**Dynamic Activity Creation**: Convert location data to Activity objects with custom durations and category-based styling.
-
-**Security Implementation**: API keys stored in environment variables and accessed only through server-side routes, preventing client-side exposure.
-
-### Advanced Time Management System
-
-**Smart Scheduling Algorithm**: Implemented sophisticated time slot management with conflict detection and auto-adjustment.
-
-```typescript
-// Smart slot finding with capacity checking
-export function findNextAvailableSlot(
-  activities: Array<{ startTime: Date; endTime: Date }>,
-  duration: number,
-  day: 'saturday' | 'sunday',
-  timeBounds: { startHour: number; endHour: number }
-): Date | null {
-  const { start: dayStart, end: dayEnd } = getDayTimeBounds(day, timeBounds);
-  
-  // Check beginning of day
-  const firstSlotEnd = new Date(dayStart.getTime() + duration * 60000);
-  if (sortedActivities.length === 0 || firstSlotEnd <= sortedActivities[0].startTime) {
-    return dayStart;
   }
+)
+```
+
+## UI Polish & Design System
+
+### 1. Design System
+
+**Decision**: Custom component library with Tailwind CSS
+- **Components**: `Button`, `Card`, `Badge`, `Modal` with consistent variants
+- **Styling**: Tailwind with `clsx` and `tailwind-merge` for conditional classes
+- **Responsive**: Mobile-first design with breakpoint-specific layouts
+
+### 2. Animation & Interaction
+
+**Libraries**: Framer Motion for complex animations, CSS transitions for micro-interactions
+- **Drag & Drop**: @dnd-kit for accessible, performant drag interactions
+- **Visual Feedback**: Hover states, loading indicators, smooth transitions
+- **Accessibility**: Keyboard navigation, screen reader support, focus management
+
+
+## Creative Features & Integrations
+
+### 1. Location-Based Activity Discovery
+
+**Innovation**: Real-time location services with Geoapify API integration
+- **Features**:
+  - GPS-based activity suggestions
+  - Distance calculation and sorting
+  - Category filtering (restaurants, parks, museums, etc.)
+  - Custom duration setting for location activities
+- **Implementation**:
+  - Server-side API routes for secure API key management
+  - Client-side geolocation with fallback handling
+  - Mock data for development/demo purposes
+
+```typescript
+// Location service with fallbacks
+class LocationService {
+  async searchNearbyPlaces(location, radius, categories) {
+    try {
+      const response = await fetch(`/api/location/places?${params}`);
+      return response.json();
+    } catch (error) {
+      return this.getMockPlaces(location);
+    }
+  }
+}
+```
+
+### 2. Intelligent Scheduling Engine
+
+**Key Features**:
+- **Smart Time Slot Detection**: Automatically finds available time slots
+- **Conflict Prevention**: Validates time overlaps before scheduling
+- **Auto-adjustment**: Recalculates subsequent activities when times change
+- **Capacity Management**: Prevents over-scheduling beyond day bounds
+
+```typescript
+// scheduling algorithm
+function findNextAvailableSlot(activities, duration, day, timeBounds) {
+  const { start: dayStart, end: dayEnd } = getDayTimeBounds(day, timeBounds);
+  const sortedActivities = [...activities].sort((a, b) => 
+    a.startTime.getTime() - b.startTime.getTime()
+  );
   
   // Check gaps between activities
   for (let i = 0; i < sortedActivities.length - 1; i++) {
-    const currentEnd = sortedActivities[i].endTime;
-    const nextStart = sortedActivities[i + 1].startTime;
-    const gapDuration = (nextStart.getTime() - currentEnd.getTime()) / 60000;
-    
-    if (gapDuration >= duration) {
-      return currentEnd;
-    }
-  }
-  
-  // Check end of day
-  const lastActivity = sortedActivities[sortedActivities.length - 1];
-  const lastSlotStart = lastActivity.endTime;
-  const lastSlotEnd = new Date(lastSlotStart.getTime() + duration * 60000);
-  
-  if (lastSlotEnd <= dayEnd) {
-    return lastSlotStart;
+    const gapDuration = (nextStart - currentEnd) / 60000;
+    if (gapDuration >= duration) return currentEnd;
   }
   
   return null; // No available slot
 }
 ```
 
-**Conflict Detection System**: Validates time overlaps when editing activities with user-friendly error messages.
+### 3. Sharing & Export
 
-```typescript
-export function checkTimeConflicts(
-  activities: Array<{ id: string; startTime: Date; endTime: Date }>,
-  targetActivityId: string,
-  newStartTime: Date,
-  newEndTime: Date
-): { hasConflict: boolean; conflictingActivity?: { id: string; name: string }; conflictType: 'start' | 'end' | 'overlap' } {
-  // Comprehensive conflict detection logic
-  // Checks for start time, end time, and complete overlap conflicts
-}
-```
+**Multi-format Export System**:
+- **Text Format**: Shareable social media text with emojis
+- **iCalendar**: Standard calendar import (.ics files)
+- **Print Format**: Clean, printable weekend plans
+- **Social Integration**: Direct Twitter sharing
 
-**Configurable Day Bounds**: Users can set custom start/end times for each day, replacing hardcoded 8am-9pm constraints.
+### 4. Drag & Drop Scheduling
 
-### Drag & Drop System
+**Implementation**: @dnd-kit with accessibility features
+- **Features**:
+  - Visual drag feedback with drag overlay
+  - Keyboard navigation support
+  - Automatic time recalculation on reorder
+  - Collision detection and smart positioning
 
-**@dnd-kit Integration**: Implemented smooth drag-and-drop functionality with proper accessibility support.
+### 5. Template System
 
-```typescript
-// Drag and drop with time recalculation
-<DndContext
-  sensors={sensors}
-  collisionDetection={closestCenter}
-  onDragEnd={handleDragEnd}
->
-  <SortableContext items={activities} strategy={verticalListSortingStrategy}>
-    {/* Draggable items with time conflict validation */}
-  </SortableContext>
-</DndContext>
-```
+**Weekend Templates**: Pre-curated activity collections
+- **Themes**: Lazy, Adventurous, Family, Wellness, Social, Productive
+- **Smart Application**: Auto-schedules template activities with optimal timing
+- **Customization**: Users can modify template activities after application
 
-**Smart Reordering**: When activities are reordered, all subsequent activities are automatically recalculated to maintain proper time sequences.
+### 6. Responsive Design Excellence
 
-### Export & Sharing System
+**Mobile-First Approach**:
+- **Breakpoints**: sm (640px), md (768px), lg (1024px), xl (1280px)
+- **Touch Optimization**: Large touch targets, swipe gestures
+- **Adaptive Layouts**: Grid to list view switching, collapsible sections
+- **Performance**: Optimized images, lazy loading, minimal bundle size
 
-**Multi-Format Export**: Comprehensive export system supporting multiple formats:
+## Technical Integrations
 
-- **iCalendar**: RFC-compliant calendar files for universal compatibility
-- **Print-Friendly HTML**: Styled HTML generation for physical copies
-- **Shareable Text**: Formatted plain text for messaging and social media
-- **Social Integration**: Direct sharing capabilities
+### 1. External APIs
 
-**Location Activity Support**: Ensures all activity types (curated and location-based) are properly included in exports with correct duration calculations.
+**Geoapify Places API**:
+- **Purpose**: Location-based activity discovery
+- **Implementation**: Server-side API routes for security
+- **Fallback**: Mock data for development and API failures
+- **Rate Limiting**: Built-in request throttling
 
-## 🔧 Technical Implementation Highlights
+### 2. Browser APIs
 
-### Performance Optimizations
+**Geolocation API**: User location detection
+**Clipboard API**: Copy-to-clipboard functionality
+**Print API**: Custom print formatting
+**LocalStorage**: Persistent state management
 
-**Efficient Re-rendering**: Removed unnecessary memoization that was blocking UI updates, prioritizing reactivity over micro-optimizations.
+### 3. Performance Optimizations
 
-**Smart State Updates**: Zustand store updates trigger minimal re-renders through selective state updates.
+**Code Splitting**: Dynamic imports for heavy components
+**Memoization**: React.memo for expensive components
+**Lazy Loading**: Deferred component loading
+**Bundle Optimization**: Tree shaking and minimal dependencies
 
-**Lazy Loading**: Components loaded on demand to reduce initial bundle size.
+## Future Enhancements
 
-### Type Safety & Error Handling
+### 1. Planned Features
 
-**Comprehensive TypeScript**: Strict typing throughout the application with proper interface definitions.
+**Weather Integration**: Activity suggestions based on weather
+**Social Features**: Share plans with friends, collaborative planning
+**Analytics**: Usage insights and activity recommendations
+**Offline Support**: Service worker for offline functionality
 
-```typescript
-interface ScheduledActivity {
-  id: string;
-  activityId: string;
-  startTime: Date;
-  endTime: Date;
-  day: 'saturday' | 'sunday';
-  notes?: string;
-  customDuration?: number;
-  activityData?: Activity; // For location-based activities
-}
+### 2. Technical Improvements
 
-interface DayTimeBounds {
-  startHour: number;
-  endHour: number;
-}
-```
+**Database Integration**: Persistent storage beyond localStorage
+**Real-time Sync**: Multi-device synchronization
+**Performance**: Virtual scrolling for large activity lists
+**Accessibility**: Enhanced screen reader support
 
-**Interface Evolution**: Types adapted as features were added (location activities, time bounds, conflict detection).
+## Conclusion
 
-**API Type Safety**: Proper interfaces for external API responses with error handling.
+Weekendly demonstrates modern React development practices with a focus on user experience, performance, and maintainability. The architecture balances simplicity with functionality, providing a solid foundation for future enhancements while delivering immediate value to users planning their weekends.
 
-**Graceful Degradation**: Fallback data for API failures with clear user feedback.
-
-### Data Flow Architecture
-
-**Unidirectional Data Flow**: Clear data flow from store → hooks → components with proper separation of concerns.
-
-**Event Handling**: Centralized event handling through custom hooks with proper dependency management.
-
-**State Persistence**: localStorage integration with Zustand persist middleware for offline functionality.
-
-## 🎯 Key Technical Challenges Solved
-
-### 1. Location-Based Activity Integration
-**Challenge**: Integrating external location data with internal activity system while maintaining type safety.
-
-**Solution**: Created `activityData` field in `ScheduledActivity` to store full activity details for location-based items, with proper type guards and fallback handling.
-
-### 2. Time Conflict Management
-**Challenge**: Preventing time overlaps while allowing flexible editing and drag-and-drop reordering.
-
-**Solution**: Implemented comprehensive conflict detection system with user-friendly error messages and smart reordering algorithms.
-
-### 3. Responsive Drag & Drop
-**Challenge**: Making drag-and-drop work smoothly on both desktop and mobile devices.
-
-**Solution**: Used @dnd-kit with proper touch sensor configuration and responsive design patterns.
-
-### 4. State Management Complexity
-**Challenge**: Managing complex state with multiple interdependent updates (time changes, reordering, conflict detection).
-
-**Solution**: Centralized business logic in custom hooks with proper separation of concerns and efficient state updates.
-
-## 📊 Performance Metrics
-
-- **Bundle Size**: Optimized with lazy loading and tree shaking
-- **Re-render Efficiency**: Minimal re-renders through selective state updates
-- **Mobile Performance**: Touch-friendly interactions with proper gesture handling
-- **Offline Support**: Full functionality with localStorage persistence
-
-## 🔮 Future Enhancements
-
-- **Real-time Collaboration**: Multi-user weekend planning
-- **AI-Powered Suggestions**: Machine learning for activity recommendations
-- **Calendar Integration**: Direct sync with Google Calendar, Outlook
-- **Advanced Analytics**: Usage patterns and optimization suggestions
-- **Voice Interface**: Voice commands for activity management
-
-This architecture prioritizes maintainability, user experience, and extensibility while keeping the codebase clean and performant. The modular design allows for easy feature additions and modifications without affecting existing functionality.
+The combination of intelligent scheduling, location-based discovery, and seamless sharing creates a comprehensive weekend planning experience that goes beyond simple task management to provide genuine utility and delight.

@@ -14,107 +14,59 @@ npm run dev
 # Open http://localhost:3000
 ```
 
-## 🏗️ Architecture & Design Decisions
+## ✨ Features
 
-### Component Design Philosophy
+- **Smart Scheduling**: Intelligent time slot management with conflict detection
+- **Location-Based Activities**: Discover nearby places using GPS and Geoapify API
+- **Drag & Drop Interface**: Intuitive activity reordering with @dnd-kit
+- **Multiple Export Formats**: Share plans via text, iCalendar, or print
+- **Responsive Design**: Mobile-first approach with touch-friendly interactions
+- **Weekend Templates**: Pre-curated activity collections for different themes
+- **Persistent Storage**: Local storage with Zustand for offline functionality
 
-**Modular Component Architecture**: The application follows a clean separation of concerns with distinct layers:
+## 🛠️ Tech Stack
 
-- **UI Components** (`/components/ui/`): Reusable, headless components (Button, Card, Badge)
-- **Feature Components** (`/components/`): Business logic components (ActivityBrowser, WeekendSchedule)
-- **Layout Components**: Structural components (MainLayout, AppHeader)
-- **Custom Hooks** (`/hooks/`): Centralized business logic and state management
+- **Framework**: Next.js 15 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **State Management**: Zustand with persistence
+- **Animations**: Framer Motion
+- **Drag & Drop**: @dnd-kit
+- **Icons**: Lucide React
+- **Location Services**: Geoapify API
 
-**Key Design Trade-offs**:
-- **Performance vs. Simplicity**: Removed excessive memoization (`React.memo`, `useMemo`) that was causing UI re-rendering issues
-- **Type Safety vs. Flexibility**: Used strict TypeScript types while allowing dynamic activity data for location-based activities
-- **State Management**: Chose Zustand over Redux for simplicity, with localStorage persistence for offline functionality
+## 📁 Project Structure
 
-### State Management Strategy
-
-**Centralized Business Logic**: Created `useWeekendPlan` hook to encapsulate all weekend planning logic, separating concerns from UI components.
-
-```typescript
-// Custom hook pattern for business logic
-export function useWeekendPlan() {
-  const { currentPlan, activities, ... } = useWeekendStore();
-  
-  // Centralized handlers
-  const handleAddActivity = useCallback((activity: Activity) => {
-    // Smart scheduling logic
-    const capacity = checkDayCapacity(dayActivities, activity.duration, targetDay, timeBounds);
-    if (!capacity.canFit) {
-      alert(`Not enough time in ${targetDay}!`);
-      return;
-    }
-    // Auto-schedule logic
-  }, [dependencies]);
-}
+```
+src/
+├── app/                 # Next.js app router
+├── components/          # React components
+│   ├── ui/             # Reusable UI components
+│   └── ...             # Feature components
+├── hooks/              # Custom React hooks
+├── store/              # Zustand store
+├── lib/                # Utilities and services
+├── types/              # TypeScript definitions
+└── data/               # Static data
 ```
 
-**Data Structure Evolution**: 
-- **ScheduledActivity** interface extended to store full `Activity` data for location-based activities
-- **Configurable Time Bounds**: Replaced hardcoded 8am-9pm with user-configurable day boundaries
-- **Smart Scheduling**: Auto-adjusts subsequent activities when duration or start time changes
+## 🏗️ Architecture
 
-### UI Polish & User Experience
+- **Component Design**: Modular architecture with compound components
+- **State Management**: Centralized business logic with custom hooks
+- **Type Safety**: Comprehensive TypeScript coverage
+- **Performance**: Optimized rendering and lazy loading
 
-**Responsive Design Approach**:
-- **Mobile-First**: All components designed for mobile, enhanced for desktop
-- **Flexible Layouts**: Used CSS Grid and Flexbox for adaptive layouts
-- **Touch-Friendly**: Proper button sizes and spacing for mobile interaction
+## 📚 Documentation
 
-**Visual Design System**:
-- **Category-Based Colors**: Dynamic color assignment for location-based activities
-- **Consistent Spacing**: 4px base unit system throughout
-- **Smooth Animations**: Framer Motion for drag-and-drop and state transitions
+For detailed technical information, architecture decisions, and implementation details, see [TECHNICAL_DOCUMENTATION.md](./TECHNICAL_DOCUMENTATION.md).
 
-### Creative Features & Integrations
+## 🚀 Deployment
 
-**Location-Based Activities**:
-- **Server-Side API Integration**: Moved Geoapify API calls to Next.js API routes for security
-- **Dynamic Activity Creation**: Convert location data to Activity objects with custom durations
-- **Category-Based Styling**: Automatic color assignment based on activity category
+```bash
+# Build for production
+npm run build
 
-**Smart Time Management**:
-- **Conflict Detection**: Validates time overlaps when editing activities
-- **Auto-Adjustment**: Automatically reschedules subsequent activities when changes are made
-- **Configurable Bounds**: Users can set custom start/end times for each day
-
-**Advanced Scheduling Logic**:
-```typescript
-// Smart slot finding with capacity checking
-const findNextAvailableSlot = (activities, duration, day, timeBounds) => {
-  const { start: dayStart, end: dayEnd } = getDayTimeBounds(day, timeBounds);
-  // Complex algorithm to find optimal time slots
-};
-
-// Time conflict validation
-const checkTimeConflicts = (activities, targetId, newStart, newEnd) => {
-  // Validates against all other activities
-};
+# Start production server
+npm start
 ```
-
-**Export & Sharing System**:
-- **Multi-Format Export**: iCal, print-friendly HTML, and shareable text
-- **Location Activity Support**: Ensures all activity types are included in exports
-- **Social Integration**: Direct sharing capabilities
-
-### Technical Implementation Highlights
-
-**Performance Optimizations**:
-- **Efficient Re-rendering**: Removed unnecessary memoization that was blocking updates
-- **Smart State Updates**: Zustand store updates trigger minimal re-renders
-- **Lazy Loading**: Components loaded on demand
-
-**Type Safety**:
-- **Comprehensive TypeScript**: Strict typing throughout the application
-- **Interface Evolution**: Types adapted as features were added (location activities, time bounds)
-- **API Type Safety**: Proper interfaces for external API responses
-
-**Error Handling**:
-- **Graceful Degradation**: Fallback data for API failures
-- **User Feedback**: Clear error messages and validation
-- **Conflict Resolution**: Smart suggestions for time conflicts
-
-This architecture prioritizes maintainability, user experience, and extensibility while keeping the codebase clean and performant.
