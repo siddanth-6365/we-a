@@ -21,35 +21,21 @@ export function WeekendOverview({
   return (
     <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
       <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="text-3xl">📊</div>
-            <div className="flex flex-row items-center gap-2">
-              <h2 className="text-xl font-bold text-gray-900 mb-1">
-                Weekend Overview
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+            {/* <div className="text-3xl">📊</div> */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
+              <h2 className="text-xl font-bold text-gray-900">
+                Weekend Overview :
               </h2>
               <p className="text-gray-700">
-                {totalActivities} activities planned • {formatDuration(totalDuration)} total time
+                {totalActivities} activities planned | {formatDuration(totalDuration)} total time
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Stats */}
-            <div className="hidden sm:flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                <span className="text-gray-700">
-                  <strong>Saturday:</strong> {saturdayCount} activities
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-gray-700">
-                  <strong>Sunday:</strong> {sundayCount} activities
-                </span>
-              </div>
-            </div>
+
 
             {/* Clear Button */}
             <Button
@@ -64,19 +50,7 @@ export function WeekendOverview({
           </div>
         </div>
 
-        {/* Mobile Stats */}
-        <div className="sm:hidden mt-4 pt-4 border-t border-gray-200">
-          <div className="flex justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-              <span className="text-gray-700">Saturday: {saturdayCount}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="text-gray-700">Sunday: {sundayCount}</span>
-            </div>
-          </div>
-        </div>
+
       </CardContent>
     </Card>
   );

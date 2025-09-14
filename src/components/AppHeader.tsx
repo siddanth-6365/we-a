@@ -34,13 +34,13 @@ export function AppHeader({
             {currentPlan && (
               <>
                 {/* Mobile plan info */}
-                <div className="flex md:hidden items-center gap-2 text-xs text-gray-600">
+                {/* <div className="flex md:hidden items-center gap-2 text-xs text-gray-600">
                   {totalDuration > 0 && (
                     <Badge variant="secondary" className="text-xs">
                       {Math.floor(totalDuration / 60)}h {totalDuration % 60}m
                     </Badge>
                   )}
-                </div>
+                </div> */}
                 
                 {/* Desktop plan info */}
                 <div className="hidden md:flex items-center gap-3 text-sm text-gray-700">
@@ -48,11 +48,11 @@ export function AppHeader({
                     <CalendarDays className="w-4 h-4" />
                     <span className="truncate max-w-[200px]">{currentPlan.name}</span>
                   </div>
-                  {totalDuration > 0 && (
+                  {/* {totalDuration > 0 && (
                     <Badge variant="secondary">
                       {Math.floor(totalDuration / 60)}h {totalDuration % 60}m planned
                     </Badge>
-                  )}
+                  )} */}
                 </div>
               </>
             )}

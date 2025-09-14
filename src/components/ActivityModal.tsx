@@ -20,7 +20,7 @@ interface ActivityModalProps {
 const categoryLabels: Record<ActivityCategory, string> = {
   food: 'Food & Dining',
   outdoor: 'Outdoor',
-  entertainment: 'Entertainment', 
+  entertainment: 'Entertainment',
   wellness: 'Wellness',
   social: 'Social',
   creative: 'Creative',
@@ -44,13 +44,13 @@ const moodLabels: Record<Mood, string> = {
   social: '👥 Social'
 };
 
-export function ActivityModal({ 
-  isOpen, 
-  onClose, 
-  activities, 
-  scheduledActivityIds, 
+export function ActivityModal({
+  isOpen,
+  onClose,
+  activities,
+  scheduledActivityIds,
   onAddActivity,
-  targetDay 
+  targetDay
 }: ActivityModalProps) {
   const [activeTab, setActiveTab] = useState<'curated' | 'nearby'>('curated');
   const [searchTerm, setSearchTerm] = useState('');
@@ -63,16 +63,16 @@ export function ActivityModal({
     return activities.filter(activity => {
       // Search filter
       const matchesSearch = activity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           activity.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (activity.tags && activity.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
+        activity.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (activity.tags && activity.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
 
       // Category filter
-      const matchesCategory = selectedCategories.length === 0 || 
-                             selectedCategories.includes(activity.category);
+      const matchesCategory = selectedCategories.length === 0 ||
+        selectedCategories.includes(activity.category);
 
       // Mood filter
-      const matchesMood = selectedMoods.length === 0 || 
-                         selectedMoods.some(mood => activity.mood.includes(mood));
+      const matchesMood = selectedMoods.length === 0 ||
+        selectedMoods.some(mood => activity.mood.includes(mood));
 
       return matchesSearch && matchesCategory && matchesMood;
     });
@@ -91,16 +91,16 @@ export function ActivityModal({
   }, [filteredActivities]);
 
   const toggleCategory = (category: ActivityCategory) => {
-    setSelectedCategories(prev => 
-      prev.includes(category) 
+    setSelectedCategories(prev =>
+      prev.includes(category)
         ? prev.filter(c => c !== category)
         : [...prev, category]
     );
   };
 
   const toggleMood = (mood: Mood) => {
-    setSelectedMoods(prev => 
-      prev.includes(mood) 
+    setSelectedMoods(prev =>
+      prev.includes(mood)
         ? prev.filter(m => m !== mood)
         : [...prev, mood]
     );
@@ -130,11 +130,11 @@ export function ActivityModal({
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
       >
         {/* Backdrop */}
-        <div 
+        <div
           className="absolute inset-0 bg-black/50 backdrop-blur-sm"
           onClick={onClose}
         />
-        
+
         {/* Modal */}
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
@@ -143,17 +143,17 @@ export function ActivityModal({
           className="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6 border-b border-gray-200 gap-4 sm:gap-0">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
                 Add Activities to {targetDay === 'saturday' ? 'Saturday' : 'Sunday'}
               </h2>
-              <p className="text-gray-700 mt-1">
+              <p className="text-gray-700 mt-1 text-sm sm:text-base truncate">
                 Choose from {activities.length} activities to build your perfect weekend
               </p>
             </div>
-            
-            <div className="flex items-center gap-3">
+
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <Button
                 variant="outline"
                 size="sm"
@@ -161,7 +161,7 @@ export function ActivityModal({
               >
                 {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
               </Button>
-              
+
               <Button
                 variant="outline"
                 size="sm"
@@ -176,12 +176,13 @@ export function ActivityModal({
                   </Badge>
                 )}
               </Button>
-              
+
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
                 className="w-8 h-8 p-0"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </Button>
@@ -193,11 +194,10 @@ export function ActivityModal({
             <div className="flex space-x-8">
               <button
                 onClick={() => setActiveTab('curated')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'curated'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'curated'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4" />
@@ -206,11 +206,10 @@ export function ActivityModal({
               </button>
               <button
                 onClick={() => setActiveTab('nearby')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'nearby'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'nearby'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
@@ -264,8 +263,8 @@ export function ActivityModal({
                           onClick={() => toggleCategory(category)}
                           className={`
                             px-3 py-1.5 text-sm rounded-full border transition-colors
-                            ${isSelected 
-                              ? 'border-transparent text-white' 
+                            ${isSelected
+                              ? 'border-transparent text-white'
                               : 'border-gray-300 text-gray-700 hover:bg-gray-100'
                             }
                           `}
@@ -319,11 +318,11 @@ export function ActivityModal({
                   <div className="space-y-8">
                     {Object.entries(categorizedActivities).map(([category, categoryActivities]) => (
                       <div key={category}>
-                        <h3 
+                        <h3
                           className="text-lg font-semibold mb-4 flex items-center gap-2"
                           style={{ color: CATEGORY_COLORS[category as ActivityCategory] }}
                         >
-                          <div 
+                          <div
                             className="w-3 h-3 rounded-full"
                             style={{ backgroundColor: CATEGORY_COLORS[category as ActivityCategory] }}
                           />
