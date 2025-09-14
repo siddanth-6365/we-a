@@ -307,33 +307,8 @@ export function DraggableSchedule({
       
       const newOrder = arrayMove(sortedActivities, oldIndex, newIndex);
       
-      // Update start times based on new order
-      const updatedOrder = newOrder.map((activity, index) => {
-        const activityData = allActivities.find(a => a.id === activity.activityId);
-        const duration = activity.customDuration || activityData?.duration || 60;
-        
-        let newStartTime: Date;
-        if (index === 0) {
-          // First activity starts at original time or 9 AM
-          newStartTime = new Date(activity.startTime);
-        } else {
-          // Subsequent activities start after the previous one ends
-          const prevActivity = newOrder[index - 1];
-          const prevActivityData = allActivities.find(a => a.id === prevActivity.activityId);
-          const prevDuration = prevActivity.customDuration || prevActivityData?.duration || 60;
-          newStartTime = new Date(prevActivity.startTime.getTime() + prevDuration * 60000);
-        }
-        
-        const newEndTime = new Date(newStartTime.getTime() + duration * 60000);
-        
-        return {
-          ...activity,
-          startTime: newStartTime,
-          endTime: newEndTime
-        };
-      });
-      
-      onReorder(updatedOrder);
+      // Use the store's reorderActivities method which properly handles time recalculation
+      onReorder(newOrder);
     }
 
     setActiveId(null);

@@ -135,7 +135,7 @@ export function LocationBasedActivities({ onAddActivity, scheduledActivityIds }:
   };
 
   const handleConfirmAdd = () => {
-    if (selectedActivity) {
+    if (selectedActivity && customDuration >= 15) {
       onAddActivity(convertToActivity(selectedActivity, customDuration));
       setShowDurationModal(false);
       setSelectedActivity(null);
@@ -389,11 +389,28 @@ export function LocationBasedActivities({ onAddActivity, scheduledActivityIds }:
                     max="480"
                     step="15"
                     value={customDuration}
-                    onChange={(e) => setCustomDuration(parseInt(e.target.value) || 60)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '') {
+                        setCustomDuration(0); // Allow empty state
+                      } else {
+                        const numValue = parseInt(value);
+                        if (!isNaN(numValue) && numValue >= 15) {
+                          setCustomDuration(numValue);
+                        }
+                      }
+                    }}
+                    onBlur={(e) => {
+                      // If field is empty or invalid on blur, reset to default
+                      if (e.target.value === '' || customDuration < 15) {
+                        setCustomDuration(120);
+                      }
+                    }}
+                    placeholder="120"
                     className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                   <span className="text-sm text-gray-600">
-                    ({Math.floor(customDuration / 60)}h {customDuration % 60}m)
+                    {customDuration > 0 ? `(${Math.floor(customDuration / 60)}h ${customDuration % 60}m)` : '(Enter duration)'}
                   </span>
                 </div>
               </div>
@@ -408,6 +425,7 @@ export function LocationBasedActivities({ onAddActivity, scheduledActivityIds }:
                 </Button>
                 <Button
                   onClick={handleConfirmAdd}
+                  disabled={customDuration < 15}
                   className="flex-1"
                 >
                   Add to Schedule

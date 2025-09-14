@@ -22,12 +22,12 @@ export function WelcomeScreen({ onGetStarted, onTemplateSelect, hasExistingPlan,
         className="max-w-4xl mx-auto text-center space-y-8"
       >
         {/* Hero Section */}
-        <div className="space-y-4">
+        <div className="space-y-6 mt-4">
           <motion.div
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="text-6xl mb-4"
+            className="text-6xl mb-6"
           >
             🗓️
           </motion.div>
@@ -36,7 +36,7 @@ export function WelcomeScreen({ onGetStarted, onTemplateSelect, hasExistingPlan,
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="text-4xl md:text-5xl font-bold text-gray-900 mb-4"
+            className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 mt-8"
           >
             Welcome to <span className="text-blue-600">Weekendly</span>
           </motion.h1>

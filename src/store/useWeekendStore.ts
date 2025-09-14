@@ -68,13 +68,57 @@ export const useWeekendStore = create<WeekendStore>()(
         const { currentPlan } = get();
         if (!currentPlan) return;
 
-        const endTime = new Date(startTime.getTime() + activity.duration * 60000);
+        // Get existing activities for this day
+        const existingActivities = currentPlan[day].sort(
+          (a, b) => a.startTime.getTime() - b.startTime.getTime()
+        );
+
+        // Find the next available slot using smart scheduling
+        const timeBounds = currentPlan.timeBounds[day];
+        const dayStart = new Date();
+        dayStart.setDate(dayStart.getDate() + (day === 'saturday' ? (6 - dayStart.getDay()) : (7 - dayStart.getDay())));
+        dayStart.setHours(timeBounds.startHour, 0, 0, 0);
+
+        const dayEnd = new Date(dayStart);
+        dayEnd.setHours(timeBounds.endHour, 0, 0, 0);
+
+        let actualStartTime = new Date(startTime);
+        let actualEndTime = new Date(startTime.getTime() + activity.duration * 60000);
+
+        // Check if the requested time conflicts with existing activities
+        const hasConflict = existingActivities.some(existing => {
+          const existingStart = existing.startTime.getTime();
+          const existingEnd = existing.endTime.getTime();
+          const newStart = actualStartTime.getTime();
+          const newEnd = actualEndTime.getTime();
+
+          // Check for overlap
+          return (newStart < existingEnd && newEnd > existingStart);
+        });
+
+        if (hasConflict) {
+          // Find the next available slot after the last activity
+          if (existingActivities.length > 0) {
+            const lastActivity = existingActivities[existingActivities.length - 1];
+            actualStartTime = new Date(lastActivity.endTime);
+            actualEndTime = new Date(actualStartTime.getTime() + activity.duration * 60000);
+          } else {
+            // No existing activities, start at day start
+            actualStartTime = new Date(dayStart);
+            actualEndTime = new Date(actualStartTime.getTime() + activity.duration * 60000);
+          }
+
+          // Check if this would exceed day bounds
+          if (actualEndTime.getTime() > dayEnd.getTime()) {
+            return; // Don't add the activity if it would exceed day bounds
+          }
+        }
         
         const scheduledActivity: ScheduledActivity = {
           id: generateId(),
           activityId: activity.id,
-          startTime,
-          endTime,
+          startTime: actualStartTime,
+          endTime: actualEndTime,
           day,
           // Store the full activity data for location-based activities
           activityData: activity.isLocationBased ? activity : undefined
@@ -197,18 +241,33 @@ export const useWeekendStore = create<WeekendStore>()(
         dayStart.setDate(dayStart.getDate() + (day === 'saturday' ? (6 - dayStart.getDay()) : (7 - dayStart.getDay())));
         dayStart.setHours(timeBounds.startHour, 0, 0, 0);
 
+        const dayEnd = new Date(dayStart);
+        dayEnd.setHours(timeBounds.endHour, 0, 0, 0);
+
         let currentTime = new Date(dayStart);
 
         for (let i = 0; i < recalculatedOrder.length; i++) {
           const activity = recalculatedOrder[i];
           
-          // Get the duration from the activity's customDuration or calculate from existing times
+          // Get the duration from the activity's customDuration, activityData, or calculate from existing times
           let duration;
           if (activity.customDuration) {
             duration = activity.customDuration;
+          } else if (activity.activityData) {
+            // For location-based activities, use the activityData duration
+            duration = activity.activityData.duration;
           } else {
             // Calculate duration from existing start and end times
             duration = (activity.endTime.getTime() - activity.startTime.getTime()) / 60000;
+          }
+          
+          // Check if this activity would fit within the day bounds
+          const activityEndTime = new Date(currentTime.getTime() + duration * 60000);
+          
+          if (activityEndTime.getTime() > dayEnd.getTime()) {
+            // This activity would go beyond day bounds, remove it and all subsequent activities
+            recalculatedOrder.splice(i);
+            break;
           }
           
           // Set new start time
